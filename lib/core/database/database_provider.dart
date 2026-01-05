@@ -23,7 +23,12 @@ class RideRepository {
   RideRepository(this._db);
 
   /// Save a completed ride session to the database
-  Future<void> saveRide(RideSession session) async {
+  Future<void> saveRide(RideSession session, {String? name}) async {
+    // Generate default name if not provided
+    final rideName = name?.isNotEmpty == true
+        ? name!
+        : 'Sortie ${session.mode.label}';
+
     // Insert ride record
     await _db.insertRide(RidesCompanion.insert(
       id: session.id,
@@ -40,6 +45,7 @@ class RideRepository {
       averageSpeed: Value(session.averageSpeed),
       workoutName: Value(session.workout?.name),
       workoutId: Value(session.workout?.id),
+      name: Value(rideName),
     ));
 
     // Insert samples
@@ -64,6 +70,7 @@ class RideRepository {
     final rides = await _db.getAllRides();
     return rides.map((r) => RideSummary(
       id: r.id,
+      name: r.name,
       startTime: r.startTime,
       endTime: r.endTime,
       mode: RideMode.values.byName(r.mode),
@@ -77,6 +84,11 @@ class RideRepository {
       averageSpeed: r.averageSpeed,
       workoutName: r.workoutName,
     )).toList();
+  }
+
+  /// Update ride name
+  Future<void> updateRideName(String rideId, String name) async {
+    await _db.updateRideName(rideId, name);
   }
 
   /// Load a complete ride session with all samples
@@ -195,6 +207,7 @@ class WorkoutRepository {
 /// Summary of a ride (without samples)
 class RideSummary {
   final String id;
+  final String name;
   final DateTime startTime;
   final DateTime? endTime;
   final RideMode mode;
@@ -210,6 +223,7 @@ class RideSummary {
 
   RideSummary({
     required this.id,
+    required this.name,
     required this.startTime,
     this.endTime,
     required this.mode,
@@ -223,6 +237,9 @@ class RideSummary {
     this.averageSpeed,
     this.workoutName,
   });
+
+  /// Display name (falls back to mode label if empty)
+  String get displayName => name.isNotEmpty ? name : 'Sortie ${mode.label}';
 }
 
 /// Overall ride statistics

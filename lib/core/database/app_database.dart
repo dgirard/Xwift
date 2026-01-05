@@ -9,6 +9,7 @@ part 'app_database.g.dart';
 /// Ride history table
 class Rides extends Table {
   TextColumn get id => text()();
+  TextColumn get name => text().withDefault(const Constant(''))();
   DateTimeColumn get startTime => dateTime()();
   DateTimeColumn get endTime => dateTime().nullable()();
   TextColumn get mode => text()(); // 'sim' or 'erg'
@@ -61,7 +62,22 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration {
+    return MigrationStrategy(
+      onCreate: (Migrator m) async {
+        await m.createAll();
+      },
+      onUpgrade: (Migrator m, int from, int to) async {
+        if (from < 2) {
+          // Add name column to rides table
+          await m.addColumn(rides, rides.name);
+        }
+      },
+    );
+  }
 
   // Ride operations
   Future<List<Ride>> getAllRides() => (select(rides)
@@ -73,6 +89,11 @@ class AppDatabase extends _$AppDatabase {
   Future<void> insertRide(RidesCompanion ride) => into(rides).insert(ride);
 
   Future<void> updateRide(Ride ride) => update(rides).replace(ride);
+
+  Future<void> updateRideName(String id, String name) async {
+    await (update(rides)..where((t) => t.id.equals(id)))
+        .write(RidesCompanion(name: Value(name)));
+  }
 
   Future<void> deleteRide(String id) =>
       (delete(rides)..where((t) => t.id.equals(id))).go();

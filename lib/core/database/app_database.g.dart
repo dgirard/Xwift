@@ -11,183 +11,124 @@ class $RidesTable extends Rides with TableInfo<$RidesTable, Ride> {
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
-    'id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _startTimeMeta = const VerificationMeta(
-    'startTime',
-  );
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(''));
+  static const VerificationMeta _startTimeMeta =
+      const VerificationMeta('startTime');
   @override
   late final GeneratedColumn<DateTime> startTime = GeneratedColumn<DateTime>(
-    'start_time',
-    aliasedName,
-    false,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _endTimeMeta = const VerificationMeta(
-    'endTime',
-  );
+      'start_time', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _endTimeMeta =
+      const VerificationMeta('endTime');
   @override
   late final GeneratedColumn<DateTime> endTime = GeneratedColumn<DateTime>(
-    'end_time',
-    aliasedName,
-    true,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
-  );
+      'end_time', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
   static const VerificationMeta _modeMeta = const VerificationMeta('mode');
   @override
   late final GeneratedColumn<String> mode = GeneratedColumn<String>(
-    'mode',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _durationSecondsMeta = const VerificationMeta(
-    'durationSeconds',
-  );
+      'mode', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _durationSecondsMeta =
+      const VerificationMeta('durationSeconds');
   @override
   late final GeneratedColumn<int> durationSeconds = GeneratedColumn<int>(
-    'duration_seconds',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(0),
-  );
-  static const VerificationMeta _totalDistanceMeta = const VerificationMeta(
-    'totalDistance',
-  );
+      'duration_seconds', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _totalDistanceMeta =
+      const VerificationMeta('totalDistance');
   @override
   late final GeneratedColumn<int> totalDistance = GeneratedColumn<int>(
-    'total_distance',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(0),
-  );
-  static const VerificationMeta _totalCaloriesMeta = const VerificationMeta(
-    'totalCalories',
-  );
+      'total_distance', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _totalCaloriesMeta =
+      const VerificationMeta('totalCalories');
   @override
   late final GeneratedColumn<int> totalCalories = GeneratedColumn<int>(
-    'total_calories',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(0),
-  );
-  static const VerificationMeta _averagePowerMeta = const VerificationMeta(
-    'averagePower',
-  );
+      'total_calories', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _averagePowerMeta =
+      const VerificationMeta('averagePower');
   @override
   late final GeneratedColumn<int> averagePower = GeneratedColumn<int>(
-    'average_power',
-    aliasedName,
-    true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _maxPowerMeta = const VerificationMeta(
-    'maxPower',
-  );
+      'average_power', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _maxPowerMeta =
+      const VerificationMeta('maxPower');
   @override
   late final GeneratedColumn<int> maxPower = GeneratedColumn<int>(
-    'max_power',
-    aliasedName,
-    true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _averageCadenceMeta = const VerificationMeta(
-    'averageCadence',
-  );
+      'max_power', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _averageCadenceMeta =
+      const VerificationMeta('averageCadence');
   @override
   late final GeneratedColumn<int> averageCadence = GeneratedColumn<int>(
-    'average_cadence',
-    aliasedName,
-    true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _averageHeartRateMeta = const VerificationMeta(
-    'averageHeartRate',
-  );
+      'average_cadence', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _averageHeartRateMeta =
+      const VerificationMeta('averageHeartRate');
   @override
   late final GeneratedColumn<int> averageHeartRate = GeneratedColumn<int>(
-    'average_heart_rate',
-    aliasedName,
-    true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _averageSpeedMeta = const VerificationMeta(
-    'averageSpeed',
-  );
+      'average_heart_rate', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _averageSpeedMeta =
+      const VerificationMeta('averageSpeed');
   @override
   late final GeneratedColumn<double> averageSpeed = GeneratedColumn<double>(
-    'average_speed',
-    aliasedName,
-    true,
-    type: DriftSqlType.double,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _workoutNameMeta = const VerificationMeta(
-    'workoutName',
-  );
+      'average_speed', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _workoutNameMeta =
+      const VerificationMeta('workoutName');
   @override
   late final GeneratedColumn<String> workoutName = GeneratedColumn<String>(
-    'workout_name',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _workoutIdMeta = const VerificationMeta(
-    'workoutId',
-  );
+      'workout_name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _workoutIdMeta =
+      const VerificationMeta('workoutId');
   @override
   late final GeneratedColumn<String> workoutId = GeneratedColumn<String>(
-    'workout_id',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
+      'workout_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
-    id,
-    startTime,
-    endTime,
-    mode,
-    durationSeconds,
-    totalDistance,
-    totalCalories,
-    averagePower,
-    maxPower,
-    averageCadence,
-    averageHeartRate,
-    averageSpeed,
-    workoutName,
-    workoutId,
-  ];
+        id,
+        name,
+        startTime,
+        endTime,
+        mode,
+        durationSeconds,
+        totalDistance,
+        totalCalories,
+        averagePower,
+        maxPower,
+        averageCadence,
+        averageHeartRate,
+        averageSpeed,
+        workoutName,
+        workoutId
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
   static const String $name = 'rides';
   @override
-  VerificationContext validateIntegrity(
-    Insertable<Ride> instance, {
-    bool isInserting = false,
-  }) {
+  VerificationContext validateIntegrity(Insertable<Ride> instance,
+      {bool isInserting = false}) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
@@ -195,111 +136,81 @@ class $RidesTable extends Rides with TableInfo<$RidesTable, Ride> {
     } else if (isInserting) {
       context.missing(_idMeta);
     }
-    if (data.containsKey('start_time')) {
+    if (data.containsKey('name')) {
       context.handle(
-        _startTimeMeta,
-        startTime.isAcceptableOrUnknown(data['start_time']!, _startTimeMeta),
-      );
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    }
+    if (data.containsKey('start_time')) {
+      context.handle(_startTimeMeta,
+          startTime.isAcceptableOrUnknown(data['start_time']!, _startTimeMeta));
     } else if (isInserting) {
       context.missing(_startTimeMeta);
     }
     if (data.containsKey('end_time')) {
-      context.handle(
-        _endTimeMeta,
-        endTime.isAcceptableOrUnknown(data['end_time']!, _endTimeMeta),
-      );
+      context.handle(_endTimeMeta,
+          endTime.isAcceptableOrUnknown(data['end_time']!, _endTimeMeta));
     }
     if (data.containsKey('mode')) {
       context.handle(
-        _modeMeta,
-        mode.isAcceptableOrUnknown(data['mode']!, _modeMeta),
-      );
+          _modeMeta, mode.isAcceptableOrUnknown(data['mode']!, _modeMeta));
     } else if (isInserting) {
       context.missing(_modeMeta);
     }
     if (data.containsKey('duration_seconds')) {
       context.handle(
-        _durationSecondsMeta,
-        durationSeconds.isAcceptableOrUnknown(
-          data['duration_seconds']!,
           _durationSecondsMeta,
-        ),
-      );
+          durationSeconds.isAcceptableOrUnknown(
+              data['duration_seconds']!, _durationSecondsMeta));
     }
     if (data.containsKey('total_distance')) {
       context.handle(
-        _totalDistanceMeta,
-        totalDistance.isAcceptableOrUnknown(
-          data['total_distance']!,
           _totalDistanceMeta,
-        ),
-      );
+          totalDistance.isAcceptableOrUnknown(
+              data['total_distance']!, _totalDistanceMeta));
     }
     if (data.containsKey('total_calories')) {
       context.handle(
-        _totalCaloriesMeta,
-        totalCalories.isAcceptableOrUnknown(
-          data['total_calories']!,
           _totalCaloriesMeta,
-        ),
-      );
+          totalCalories.isAcceptableOrUnknown(
+              data['total_calories']!, _totalCaloriesMeta));
     }
     if (data.containsKey('average_power')) {
       context.handle(
-        _averagePowerMeta,
-        averagePower.isAcceptableOrUnknown(
-          data['average_power']!,
           _averagePowerMeta,
-        ),
-      );
+          averagePower.isAcceptableOrUnknown(
+              data['average_power']!, _averagePowerMeta));
     }
     if (data.containsKey('max_power')) {
-      context.handle(
-        _maxPowerMeta,
-        maxPower.isAcceptableOrUnknown(data['max_power']!, _maxPowerMeta),
-      );
+      context.handle(_maxPowerMeta,
+          maxPower.isAcceptableOrUnknown(data['max_power']!, _maxPowerMeta));
     }
     if (data.containsKey('average_cadence')) {
       context.handle(
-        _averageCadenceMeta,
-        averageCadence.isAcceptableOrUnknown(
-          data['average_cadence']!,
           _averageCadenceMeta,
-        ),
-      );
+          averageCadence.isAcceptableOrUnknown(
+              data['average_cadence']!, _averageCadenceMeta));
     }
     if (data.containsKey('average_heart_rate')) {
       context.handle(
-        _averageHeartRateMeta,
-        averageHeartRate.isAcceptableOrUnknown(
-          data['average_heart_rate']!,
           _averageHeartRateMeta,
-        ),
-      );
+          averageHeartRate.isAcceptableOrUnknown(
+              data['average_heart_rate']!, _averageHeartRateMeta));
     }
     if (data.containsKey('average_speed')) {
       context.handle(
-        _averageSpeedMeta,
-        averageSpeed.isAcceptableOrUnknown(
-          data['average_speed']!,
           _averageSpeedMeta,
-        ),
-      );
+          averageSpeed.isAcceptableOrUnknown(
+              data['average_speed']!, _averageSpeedMeta));
     }
     if (data.containsKey('workout_name')) {
       context.handle(
-        _workoutNameMeta,
-        workoutName.isAcceptableOrUnknown(
-          data['workout_name']!,
           _workoutNameMeta,
-        ),
-      );
+          workoutName.isAcceptableOrUnknown(
+              data['workout_name']!, _workoutNameMeta));
     }
     if (data.containsKey('workout_id')) {
-      context.handle(
-        _workoutIdMeta,
-        workoutId.isAcceptableOrUnknown(data['workout_id']!, _workoutIdMeta),
-      );
+      context.handle(_workoutIdMeta,
+          workoutId.isAcceptableOrUnknown(data['workout_id']!, _workoutIdMeta));
     }
     return context;
   }
@@ -310,62 +221,36 @@ class $RidesTable extends Rides with TableInfo<$RidesTable, Ride> {
   Ride map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return Ride(
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}id'],
-      )!,
-      startTime: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}start_time'],
-      )!,
-      endTime: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}end_time'],
-      ),
-      mode: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}mode'],
-      )!,
-      durationSeconds: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}duration_seconds'],
-      )!,
-      totalDistance: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}total_distance'],
-      )!,
-      totalCalories: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}total_calories'],
-      )!,
-      averagePower: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}average_power'],
-      ),
-      maxPower: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}max_power'],
-      ),
-      averageCadence: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}average_cadence'],
-      ),
-      averageHeartRate: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}average_heart_rate'],
-      ),
-      averageSpeed: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
-        data['${effectivePrefix}average_speed'],
-      ),
-      workoutName: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}workout_name'],
-      ),
-      workoutId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}workout_id'],
-      ),
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      startTime: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}start_time'])!,
+      endTime: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}end_time']),
+      mode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}mode'])!,
+      durationSeconds: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}duration_seconds'])!,
+      totalDistance: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}total_distance'])!,
+      totalCalories: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}total_calories'])!,
+      averagePower: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}average_power']),
+      maxPower: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}max_power']),
+      averageCadence: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}average_cadence']),
+      averageHeartRate: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}average_heart_rate']),
+      averageSpeed: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}average_speed']),
+      workoutName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}workout_name']),
+      workoutId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}workout_id']),
     );
   }
 
@@ -377,6 +262,7 @@ class $RidesTable extends Rides with TableInfo<$RidesTable, Ride> {
 
 class Ride extends DataClass implements Insertable<Ride> {
   final String id;
+  final String name;
   final DateTime startTime;
   final DateTime? endTime;
   final String mode;
@@ -390,26 +276,27 @@ class Ride extends DataClass implements Insertable<Ride> {
   final double? averageSpeed;
   final String? workoutName;
   final String? workoutId;
-  const Ride({
-    required this.id,
-    required this.startTime,
-    this.endTime,
-    required this.mode,
-    required this.durationSeconds,
-    required this.totalDistance,
-    required this.totalCalories,
-    this.averagePower,
-    this.maxPower,
-    this.averageCadence,
-    this.averageHeartRate,
-    this.averageSpeed,
-    this.workoutName,
-    this.workoutId,
-  });
+  const Ride(
+      {required this.id,
+      required this.name,
+      required this.startTime,
+      this.endTime,
+      required this.mode,
+      required this.durationSeconds,
+      required this.totalDistance,
+      required this.totalCalories,
+      this.averagePower,
+      this.maxPower,
+      this.averageCadence,
+      this.averageHeartRate,
+      this.averageSpeed,
+      this.workoutName,
+      this.workoutId});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
     map['start_time'] = Variable<DateTime>(startTime);
     if (!nullToAbsent || endTime != null) {
       map['end_time'] = Variable<DateTime>(endTime);
@@ -445,6 +332,7 @@ class Ride extends DataClass implements Insertable<Ride> {
   RidesCompanion toCompanion(bool nullToAbsent) {
     return RidesCompanion(
       id: Value(id),
+      name: Value(name),
       startTime: Value(startTime),
       endTime: endTime == null && nullToAbsent
           ? const Value.absent()
@@ -477,13 +365,12 @@ class Ride extends DataClass implements Insertable<Ride> {
     );
   }
 
-  factory Ride.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
+  factory Ride.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Ride(
       id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
       startTime: serializer.fromJson<DateTime>(json['startTime']),
       endTime: serializer.fromJson<DateTime?>(json['endTime']),
       mode: serializer.fromJson<String>(json['mode']),
@@ -504,6 +391,7 @@ class Ride extends DataClass implements Insertable<Ride> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
       'startTime': serializer.toJson<DateTime>(startTime),
       'endTime': serializer.toJson<DateTime?>(endTime),
       'mode': serializer.toJson<String>(mode),
@@ -520,44 +408,48 @@ class Ride extends DataClass implements Insertable<Ride> {
     };
   }
 
-  Ride copyWith({
-    String? id,
-    DateTime? startTime,
-    Value<DateTime?> endTime = const Value.absent(),
-    String? mode,
-    int? durationSeconds,
-    int? totalDistance,
-    int? totalCalories,
-    Value<int?> averagePower = const Value.absent(),
-    Value<int?> maxPower = const Value.absent(),
-    Value<int?> averageCadence = const Value.absent(),
-    Value<int?> averageHeartRate = const Value.absent(),
-    Value<double?> averageSpeed = const Value.absent(),
-    Value<String?> workoutName = const Value.absent(),
-    Value<String?> workoutId = const Value.absent(),
-  }) => Ride(
-    id: id ?? this.id,
-    startTime: startTime ?? this.startTime,
-    endTime: endTime.present ? endTime.value : this.endTime,
-    mode: mode ?? this.mode,
-    durationSeconds: durationSeconds ?? this.durationSeconds,
-    totalDistance: totalDistance ?? this.totalDistance,
-    totalCalories: totalCalories ?? this.totalCalories,
-    averagePower: averagePower.present ? averagePower.value : this.averagePower,
-    maxPower: maxPower.present ? maxPower.value : this.maxPower,
-    averageCadence: averageCadence.present
-        ? averageCadence.value
-        : this.averageCadence,
-    averageHeartRate: averageHeartRate.present
-        ? averageHeartRate.value
-        : this.averageHeartRate,
-    averageSpeed: averageSpeed.present ? averageSpeed.value : this.averageSpeed,
-    workoutName: workoutName.present ? workoutName.value : this.workoutName,
-    workoutId: workoutId.present ? workoutId.value : this.workoutId,
-  );
+  Ride copyWith(
+          {String? id,
+          String? name,
+          DateTime? startTime,
+          Value<DateTime?> endTime = const Value.absent(),
+          String? mode,
+          int? durationSeconds,
+          int? totalDistance,
+          int? totalCalories,
+          Value<int?> averagePower = const Value.absent(),
+          Value<int?> maxPower = const Value.absent(),
+          Value<int?> averageCadence = const Value.absent(),
+          Value<int?> averageHeartRate = const Value.absent(),
+          Value<double?> averageSpeed = const Value.absent(),
+          Value<String?> workoutName = const Value.absent(),
+          Value<String?> workoutId = const Value.absent()}) =>
+      Ride(
+        id: id ?? this.id,
+        name: name ?? this.name,
+        startTime: startTime ?? this.startTime,
+        endTime: endTime.present ? endTime.value : this.endTime,
+        mode: mode ?? this.mode,
+        durationSeconds: durationSeconds ?? this.durationSeconds,
+        totalDistance: totalDistance ?? this.totalDistance,
+        totalCalories: totalCalories ?? this.totalCalories,
+        averagePower:
+            averagePower.present ? averagePower.value : this.averagePower,
+        maxPower: maxPower.present ? maxPower.value : this.maxPower,
+        averageCadence:
+            averageCadence.present ? averageCadence.value : this.averageCadence,
+        averageHeartRate: averageHeartRate.present
+            ? averageHeartRate.value
+            : this.averageHeartRate,
+        averageSpeed:
+            averageSpeed.present ? averageSpeed.value : this.averageSpeed,
+        workoutName: workoutName.present ? workoutName.value : this.workoutName,
+        workoutId: workoutId.present ? workoutId.value : this.workoutId,
+      );
   Ride copyWithCompanion(RidesCompanion data) {
     return Ride(
       id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
       startTime: data.startTime.present ? data.startTime.value : this.startTime,
       endTime: data.endTime.present ? data.endTime.value : this.endTime,
       mode: data.mode.present ? data.mode.value : this.mode,
@@ -583,9 +475,8 @@ class Ride extends DataClass implements Insertable<Ride> {
       averageSpeed: data.averageSpeed.present
           ? data.averageSpeed.value
           : this.averageSpeed,
-      workoutName: data.workoutName.present
-          ? data.workoutName.value
-          : this.workoutName,
+      workoutName:
+          data.workoutName.present ? data.workoutName.value : this.workoutName,
       workoutId: data.workoutId.present ? data.workoutId.value : this.workoutId,
     );
   }
@@ -594,6 +485,7 @@ class Ride extends DataClass implements Insertable<Ride> {
   String toString() {
     return (StringBuffer('Ride(')
           ..write('id: $id, ')
+          ..write('name: $name, ')
           ..write('startTime: $startTime, ')
           ..write('endTime: $endTime, ')
           ..write('mode: $mode, ')
@@ -613,26 +505,27 @@ class Ride extends DataClass implements Insertable<Ride> {
 
   @override
   int get hashCode => Object.hash(
-    id,
-    startTime,
-    endTime,
-    mode,
-    durationSeconds,
-    totalDistance,
-    totalCalories,
-    averagePower,
-    maxPower,
-    averageCadence,
-    averageHeartRate,
-    averageSpeed,
-    workoutName,
-    workoutId,
-  );
+      id,
+      name,
+      startTime,
+      endTime,
+      mode,
+      durationSeconds,
+      totalDistance,
+      totalCalories,
+      averagePower,
+      maxPower,
+      averageCadence,
+      averageHeartRate,
+      averageSpeed,
+      workoutName,
+      workoutId);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Ride &&
           other.id == this.id &&
+          other.name == this.name &&
           other.startTime == this.startTime &&
           other.endTime == this.endTime &&
           other.mode == this.mode &&
@@ -650,6 +543,7 @@ class Ride extends DataClass implements Insertable<Ride> {
 
 class RidesCompanion extends UpdateCompanion<Ride> {
   final Value<String> id;
+  final Value<String> name;
   final Value<DateTime> startTime;
   final Value<DateTime?> endTime;
   final Value<String> mode;
@@ -666,6 +560,7 @@ class RidesCompanion extends UpdateCompanion<Ride> {
   final Value<int> rowid;
   const RidesCompanion({
     this.id = const Value.absent(),
+    this.name = const Value.absent(),
     this.startTime = const Value.absent(),
     this.endTime = const Value.absent(),
     this.mode = const Value.absent(),
@@ -683,6 +578,7 @@ class RidesCompanion extends UpdateCompanion<Ride> {
   });
   RidesCompanion.insert({
     required String id,
+    this.name = const Value.absent(),
     required DateTime startTime,
     this.endTime = const Value.absent(),
     required String mode,
@@ -697,11 +593,12 @@ class RidesCompanion extends UpdateCompanion<Ride> {
     this.workoutName = const Value.absent(),
     this.workoutId = const Value.absent(),
     this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       startTime = Value(startTime),
-       mode = Value(mode);
+  })  : id = Value(id),
+        startTime = Value(startTime),
+        mode = Value(mode);
   static Insertable<Ride> custom({
     Expression<String>? id,
+    Expression<String>? name,
     Expression<DateTime>? startTime,
     Expression<DateTime>? endTime,
     Expression<String>? mode,
@@ -719,6 +616,7 @@ class RidesCompanion extends UpdateCompanion<Ride> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
+      if (name != null) 'name': name,
       if (startTime != null) 'start_time': startTime,
       if (endTime != null) 'end_time': endTime,
       if (mode != null) 'mode': mode,
@@ -736,25 +634,26 @@ class RidesCompanion extends UpdateCompanion<Ride> {
     });
   }
 
-  RidesCompanion copyWith({
-    Value<String>? id,
-    Value<DateTime>? startTime,
-    Value<DateTime?>? endTime,
-    Value<String>? mode,
-    Value<int>? durationSeconds,
-    Value<int>? totalDistance,
-    Value<int>? totalCalories,
-    Value<int?>? averagePower,
-    Value<int?>? maxPower,
-    Value<int?>? averageCadence,
-    Value<int?>? averageHeartRate,
-    Value<double?>? averageSpeed,
-    Value<String?>? workoutName,
-    Value<String?>? workoutId,
-    Value<int>? rowid,
-  }) {
+  RidesCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? name,
+      Value<DateTime>? startTime,
+      Value<DateTime?>? endTime,
+      Value<String>? mode,
+      Value<int>? durationSeconds,
+      Value<int>? totalDistance,
+      Value<int>? totalCalories,
+      Value<int?>? averagePower,
+      Value<int?>? maxPower,
+      Value<int?>? averageCadence,
+      Value<int?>? averageHeartRate,
+      Value<double?>? averageSpeed,
+      Value<String?>? workoutName,
+      Value<String?>? workoutId,
+      Value<int>? rowid}) {
     return RidesCompanion(
       id: id ?? this.id,
+      name: name ?? this.name,
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
       mode: mode ?? this.mode,
@@ -777,6 +676,9 @@ class RidesCompanion extends UpdateCompanion<Ride> {
     final map = <String, Expression>{};
     if (id.present) {
       map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
     }
     if (startTime.present) {
       map['start_time'] = Variable<DateTime>(startTime.value);
@@ -827,6 +729,7 @@ class RidesCompanion extends UpdateCompanion<Ride> {
   String toString() {
     return (StringBuffer('RidesCompanion(')
           ..write('id: $id, ')
+          ..write('name: $name, ')
           ..write('startTime: $startTime, ')
           ..write('endTime: $endTime, ')
           ..write('mode: $mode, ')
@@ -855,179 +758,120 @@ class $RideSamplesTable extends RideSamples
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<int> id = GeneratedColumn<int>(
-    'id',
-    aliasedName,
-    false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
-  );
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
   static const VerificationMeta _rideIdMeta = const VerificationMeta('rideId');
   @override
   late final GeneratedColumn<String> rideId = GeneratedColumn<String>(
-    'ride_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES rides (id)',
-    ),
-  );
-  static const VerificationMeta _timestampMeta = const VerificationMeta(
-    'timestamp',
-  );
+      'ride_id', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES rides (id)'));
+  static const VerificationMeta _timestampMeta =
+      const VerificationMeta('timestamp');
   @override
   late final GeneratedColumn<DateTime> timestamp = GeneratedColumn<DateTime>(
-    'timestamp',
-    aliasedName,
-    false,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
-  );
+      'timestamp', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
   static const VerificationMeta _powerMeta = const VerificationMeta('power');
   @override
   late final GeneratedColumn<int> power = GeneratedColumn<int>(
-    'power',
-    aliasedName,
-    true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _cadenceMeta = const VerificationMeta(
-    'cadence',
-  );
+      'power', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _cadenceMeta =
+      const VerificationMeta('cadence');
   @override
   late final GeneratedColumn<int> cadence = GeneratedColumn<int>(
-    'cadence',
-    aliasedName,
-    true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-  );
+      'cadence', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   static const VerificationMeta _speedMeta = const VerificationMeta('speed');
   @override
   late final GeneratedColumn<double> speed = GeneratedColumn<double>(
-    'speed',
-    aliasedName,
-    true,
-    type: DriftSqlType.double,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _heartRateMeta = const VerificationMeta(
-    'heartRate',
-  );
+      'speed', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _heartRateMeta =
+      const VerificationMeta('heartRate');
   @override
   late final GeneratedColumn<int> heartRate = GeneratedColumn<int>(
-    'heart_rate',
-    aliasedName,
-    true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _distanceMeta = const VerificationMeta(
-    'distance',
-  );
+      'heart_rate', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _distanceMeta =
+      const VerificationMeta('distance');
   @override
   late final GeneratedColumn<int> distance = GeneratedColumn<int>(
-    'distance',
-    aliasedName,
-    true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _caloriesMeta = const VerificationMeta(
-    'calories',
-  );
+      'distance', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _caloriesMeta =
+      const VerificationMeta('calories');
   @override
   late final GeneratedColumn<int> calories = GeneratedColumn<int>(
-    'calories',
-    aliasedName,
-    true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-  );
+      'calories', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
-    id,
-    rideId,
-    timestamp,
-    power,
-    cadence,
-    speed,
-    heartRate,
-    distance,
-    calories,
-  ];
+        id,
+        rideId,
+        timestamp,
+        power,
+        cadence,
+        speed,
+        heartRate,
+        distance,
+        calories
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
   static const String $name = 'ride_samples';
   @override
-  VerificationContext validateIntegrity(
-    Insertable<RideSample> instance, {
-    bool isInserting = false,
-  }) {
+  VerificationContext validateIntegrity(Insertable<RideSample> instance,
+      {bool isInserting = false}) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     }
     if (data.containsKey('ride_id')) {
-      context.handle(
-        _rideIdMeta,
-        rideId.isAcceptableOrUnknown(data['ride_id']!, _rideIdMeta),
-      );
+      context.handle(_rideIdMeta,
+          rideId.isAcceptableOrUnknown(data['ride_id']!, _rideIdMeta));
     } else if (isInserting) {
       context.missing(_rideIdMeta);
     }
     if (data.containsKey('timestamp')) {
-      context.handle(
-        _timestampMeta,
-        timestamp.isAcceptableOrUnknown(data['timestamp']!, _timestampMeta),
-      );
+      context.handle(_timestampMeta,
+          timestamp.isAcceptableOrUnknown(data['timestamp']!, _timestampMeta));
     } else if (isInserting) {
       context.missing(_timestampMeta);
     }
     if (data.containsKey('power')) {
       context.handle(
-        _powerMeta,
-        power.isAcceptableOrUnknown(data['power']!, _powerMeta),
-      );
+          _powerMeta, power.isAcceptableOrUnknown(data['power']!, _powerMeta));
     }
     if (data.containsKey('cadence')) {
-      context.handle(
-        _cadenceMeta,
-        cadence.isAcceptableOrUnknown(data['cadence']!, _cadenceMeta),
-      );
+      context.handle(_cadenceMeta,
+          cadence.isAcceptableOrUnknown(data['cadence']!, _cadenceMeta));
     }
     if (data.containsKey('speed')) {
       context.handle(
-        _speedMeta,
-        speed.isAcceptableOrUnknown(data['speed']!, _speedMeta),
-      );
+          _speedMeta, speed.isAcceptableOrUnknown(data['speed']!, _speedMeta));
     }
     if (data.containsKey('heart_rate')) {
-      context.handle(
-        _heartRateMeta,
-        heartRate.isAcceptableOrUnknown(data['heart_rate']!, _heartRateMeta),
-      );
+      context.handle(_heartRateMeta,
+          heartRate.isAcceptableOrUnknown(data['heart_rate']!, _heartRateMeta));
     }
     if (data.containsKey('distance')) {
-      context.handle(
-        _distanceMeta,
-        distance.isAcceptableOrUnknown(data['distance']!, _distanceMeta),
-      );
+      context.handle(_distanceMeta,
+          distance.isAcceptableOrUnknown(data['distance']!, _distanceMeta));
     }
     if (data.containsKey('calories')) {
-      context.handle(
-        _caloriesMeta,
-        calories.isAcceptableOrUnknown(data['calories']!, _caloriesMeta),
-      );
+      context.handle(_caloriesMeta,
+          calories.isAcceptableOrUnknown(data['calories']!, _caloriesMeta));
     }
     return context;
   }
@@ -1038,42 +882,24 @@ class $RideSamplesTable extends RideSamples
   RideSample map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return RideSample(
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}id'],
-      )!,
-      rideId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}ride_id'],
-      )!,
-      timestamp: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}timestamp'],
-      )!,
-      power: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}power'],
-      ),
-      cadence: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}cadence'],
-      ),
-      speed: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
-        data['${effectivePrefix}speed'],
-      ),
-      heartRate: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}heart_rate'],
-      ),
-      distance: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}distance'],
-      ),
-      calories: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}calories'],
-      ),
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      rideId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}ride_id'])!,
+      timestamp: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}timestamp'])!,
+      power: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}power']),
+      cadence: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}cadence']),
+      speed: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}speed']),
+      heartRate: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}heart_rate']),
+      distance: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}distance']),
+      calories: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}calories']),
     );
   }
 
@@ -1093,17 +919,16 @@ class RideSample extends DataClass implements Insertable<RideSample> {
   final int? heartRate;
   final int? distance;
   final int? calories;
-  const RideSample({
-    required this.id,
-    required this.rideId,
-    required this.timestamp,
-    this.power,
-    this.cadence,
-    this.speed,
-    this.heartRate,
-    this.distance,
-    this.calories,
-  });
+  const RideSample(
+      {required this.id,
+      required this.rideId,
+      required this.timestamp,
+      this.power,
+      this.cadence,
+      this.speed,
+      this.heartRate,
+      this.distance,
+      this.calories});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1136,15 +961,13 @@ class RideSample extends DataClass implements Insertable<RideSample> {
       id: Value(id),
       rideId: Value(rideId),
       timestamp: Value(timestamp),
-      power: power == null && nullToAbsent
-          ? const Value.absent()
-          : Value(power),
+      power:
+          power == null && nullToAbsent ? const Value.absent() : Value(power),
       cadence: cadence == null && nullToAbsent
           ? const Value.absent()
           : Value(cadence),
-      speed: speed == null && nullToAbsent
-          ? const Value.absent()
-          : Value(speed),
+      speed:
+          speed == null && nullToAbsent ? const Value.absent() : Value(speed),
       heartRate: heartRate == null && nullToAbsent
           ? const Value.absent()
           : Value(heartRate),
@@ -1157,10 +980,8 @@ class RideSample extends DataClass implements Insertable<RideSample> {
     );
   }
 
-  factory RideSample.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
+  factory RideSample.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return RideSample(
       id: serializer.fromJson<int>(json['id']),
@@ -1190,27 +1011,27 @@ class RideSample extends DataClass implements Insertable<RideSample> {
     };
   }
 
-  RideSample copyWith({
-    int? id,
-    String? rideId,
-    DateTime? timestamp,
-    Value<int?> power = const Value.absent(),
-    Value<int?> cadence = const Value.absent(),
-    Value<double?> speed = const Value.absent(),
-    Value<int?> heartRate = const Value.absent(),
-    Value<int?> distance = const Value.absent(),
-    Value<int?> calories = const Value.absent(),
-  }) => RideSample(
-    id: id ?? this.id,
-    rideId: rideId ?? this.rideId,
-    timestamp: timestamp ?? this.timestamp,
-    power: power.present ? power.value : this.power,
-    cadence: cadence.present ? cadence.value : this.cadence,
-    speed: speed.present ? speed.value : this.speed,
-    heartRate: heartRate.present ? heartRate.value : this.heartRate,
-    distance: distance.present ? distance.value : this.distance,
-    calories: calories.present ? calories.value : this.calories,
-  );
+  RideSample copyWith(
+          {int? id,
+          String? rideId,
+          DateTime? timestamp,
+          Value<int?> power = const Value.absent(),
+          Value<int?> cadence = const Value.absent(),
+          Value<double?> speed = const Value.absent(),
+          Value<int?> heartRate = const Value.absent(),
+          Value<int?> distance = const Value.absent(),
+          Value<int?> calories = const Value.absent()}) =>
+      RideSample(
+        id: id ?? this.id,
+        rideId: rideId ?? this.rideId,
+        timestamp: timestamp ?? this.timestamp,
+        power: power.present ? power.value : this.power,
+        cadence: cadence.present ? cadence.value : this.cadence,
+        speed: speed.present ? speed.value : this.speed,
+        heartRate: heartRate.present ? heartRate.value : this.heartRate,
+        distance: distance.present ? distance.value : this.distance,
+        calories: calories.present ? calories.value : this.calories,
+      );
   RideSample copyWithCompanion(RideSamplesCompanion data) {
     return RideSample(
       id: data.id.present ? data.id.value : this.id,
@@ -1242,17 +1063,8 @@ class RideSample extends DataClass implements Insertable<RideSample> {
   }
 
   @override
-  int get hashCode => Object.hash(
-    id,
-    rideId,
-    timestamp,
-    power,
-    cadence,
-    speed,
-    heartRate,
-    distance,
-    calories,
-  );
+  int get hashCode => Object.hash(id, rideId, timestamp, power, cadence, speed,
+      heartRate, distance, calories);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1299,8 +1111,8 @@ class RideSamplesCompanion extends UpdateCompanion<RideSample> {
     this.heartRate = const Value.absent(),
     this.distance = const Value.absent(),
     this.calories = const Value.absent(),
-  }) : rideId = Value(rideId),
-       timestamp = Value(timestamp);
+  })  : rideId = Value(rideId),
+        timestamp = Value(timestamp);
   static Insertable<RideSample> custom({
     Expression<int>? id,
     Expression<String>? rideId,
@@ -1325,17 +1137,16 @@ class RideSamplesCompanion extends UpdateCompanion<RideSample> {
     });
   }
 
-  RideSamplesCompanion copyWith({
-    Value<int>? id,
-    Value<String>? rideId,
-    Value<DateTime>? timestamp,
-    Value<int?>? power,
-    Value<int?>? cadence,
-    Value<double?>? speed,
-    Value<int?>? heartRate,
-    Value<int?>? distance,
-    Value<int?>? calories,
-  }) {
+  RideSamplesCompanion copyWith(
+      {Value<int>? id,
+      Value<String>? rideId,
+      Value<DateTime>? timestamp,
+      Value<int?>? power,
+      Value<int?>? cadence,
+      Value<double?>? speed,
+      Value<int?>? heartRate,
+      Value<int?>? distance,
+      Value<int?>? calories}) {
     return RideSamplesCompanion(
       id: id ?? this.id,
       rideId: rideId ?? this.rideId,
@@ -1407,117 +1218,75 @@ class $WorkoutsTable extends Workouts with TableInfo<$WorkoutsTable, Workout> {
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
-    'id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
-    'name',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _descriptionMeta = const VerificationMeta(
-    'description',
-  );
+      'name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _descriptionMeta =
+      const VerificationMeta('description');
   @override
   late final GeneratedColumn<String> description = GeneratedColumn<String>(
-    'description',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
+      'description', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _authorMeta = const VerificationMeta('author');
   @override
   late final GeneratedColumn<String> author = GeneratedColumn<String>(
-    'author',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
+      'author', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _ftpMeta = const VerificationMeta('ftp');
   @override
   late final GeneratedColumn<int> ftp = GeneratedColumn<int>(
-    'ftp',
-    aliasedName,
-    true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _intervalsJsonMeta = const VerificationMeta(
-    'intervalsJson',
-  );
+      'ftp', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _intervalsJsonMeta =
+      const VerificationMeta('intervalsJson');
   @override
   late final GeneratedColumn<String> intervalsJson = GeneratedColumn<String>(
-    'intervals_json',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _createdAtMeta = const VerificationMeta(
-    'createdAt',
-  );
+      'intervals_json', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
   @override
   late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
-    'created_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _lastUsedAtMeta = const VerificationMeta(
-    'lastUsedAt',
-  );
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _lastUsedAtMeta =
+      const VerificationMeta('lastUsedAt');
   @override
   late final GeneratedColumn<DateTime> lastUsedAt = GeneratedColumn<DateTime>(
-    'last_used_at',
-    aliasedName,
-    true,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _useCountMeta = const VerificationMeta(
-    'useCount',
-  );
+      'last_used_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _useCountMeta =
+      const VerificationMeta('useCount');
   @override
   late final GeneratedColumn<int> useCount = GeneratedColumn<int>(
-    'use_count',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(0),
-  );
+      'use_count', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
   @override
   List<GeneratedColumn> get $columns => [
-    id,
-    name,
-    description,
-    author,
-    ftp,
-    intervalsJson,
-    createdAt,
-    lastUsedAt,
-    useCount,
-  ];
+        id,
+        name,
+        description,
+        author,
+        ftp,
+        intervalsJson,
+        createdAt,
+        lastUsedAt,
+        useCount
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
   static const String $name = 'workouts';
   @override
-  VerificationContext validateIntegrity(
-    Insertable<Workout> instance, {
-    bool isInserting = false,
-  }) {
+  VerificationContext validateIntegrity(Insertable<Workout> instance,
+      {bool isInserting = false}) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
@@ -1527,66 +1296,47 @@ class $WorkoutsTable extends Workouts with TableInfo<$WorkoutsTable, Workout> {
     }
     if (data.containsKey('name')) {
       context.handle(
-        _nameMeta,
-        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
-      );
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
     } else if (isInserting) {
       context.missing(_nameMeta);
     }
     if (data.containsKey('description')) {
       context.handle(
-        _descriptionMeta,
-        description.isAcceptableOrUnknown(
-          data['description']!,
           _descriptionMeta,
-        ),
-      );
+          description.isAcceptableOrUnknown(
+              data['description']!, _descriptionMeta));
     }
     if (data.containsKey('author')) {
-      context.handle(
-        _authorMeta,
-        author.isAcceptableOrUnknown(data['author']!, _authorMeta),
-      );
+      context.handle(_authorMeta,
+          author.isAcceptableOrUnknown(data['author']!, _authorMeta));
     }
     if (data.containsKey('ftp')) {
       context.handle(
-        _ftpMeta,
-        ftp.isAcceptableOrUnknown(data['ftp']!, _ftpMeta),
-      );
+          _ftpMeta, ftp.isAcceptableOrUnknown(data['ftp']!, _ftpMeta));
     }
     if (data.containsKey('intervals_json')) {
       context.handle(
-        _intervalsJsonMeta,
-        intervalsJson.isAcceptableOrUnknown(
-          data['intervals_json']!,
           _intervalsJsonMeta,
-        ),
-      );
+          intervalsJson.isAcceptableOrUnknown(
+              data['intervals_json']!, _intervalsJsonMeta));
     } else if (isInserting) {
       context.missing(_intervalsJsonMeta);
     }
     if (data.containsKey('created_at')) {
-      context.handle(
-        _createdAtMeta,
-        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
-      );
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
     } else if (isInserting) {
       context.missing(_createdAtMeta);
     }
     if (data.containsKey('last_used_at')) {
       context.handle(
-        _lastUsedAtMeta,
-        lastUsedAt.isAcceptableOrUnknown(
-          data['last_used_at']!,
           _lastUsedAtMeta,
-        ),
-      );
+          lastUsedAt.isAcceptableOrUnknown(
+              data['last_used_at']!, _lastUsedAtMeta));
     }
     if (data.containsKey('use_count')) {
-      context.handle(
-        _useCountMeta,
-        useCount.isAcceptableOrUnknown(data['use_count']!, _useCountMeta),
-      );
+      context.handle(_useCountMeta,
+          useCount.isAcceptableOrUnknown(data['use_count']!, _useCountMeta));
     }
     return context;
   }
@@ -1597,42 +1347,24 @@ class $WorkoutsTable extends Workouts with TableInfo<$WorkoutsTable, Workout> {
   Workout map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return Workout(
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}id'],
-      )!,
-      name: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}name'],
-      )!,
-      description: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}description'],
-      ),
-      author: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}author'],
-      ),
-      ftp: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}ftp'],
-      ),
-      intervalsJson: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}intervals_json'],
-      )!,
-      createdAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}created_at'],
-      )!,
-      lastUsedAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}last_used_at'],
-      ),
-      useCount: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}use_count'],
-      )!,
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      description: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}description']),
+      author: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}author']),
+      ftp: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}ftp']),
+      intervalsJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}intervals_json'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      lastUsedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}last_used_at']),
+      useCount: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}use_count'])!,
     );
   }
 
@@ -1652,17 +1384,16 @@ class Workout extends DataClass implements Insertable<Workout> {
   final DateTime createdAt;
   final DateTime? lastUsedAt;
   final int useCount;
-  const Workout({
-    required this.id,
-    required this.name,
-    this.description,
-    this.author,
-    this.ftp,
-    required this.intervalsJson,
-    required this.createdAt,
-    this.lastUsedAt,
-    required this.useCount,
-  });
+  const Workout(
+      {required this.id,
+      required this.name,
+      this.description,
+      this.author,
+      this.ftp,
+      required this.intervalsJson,
+      required this.createdAt,
+      this.lastUsedAt,
+      required this.useCount});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1693,9 +1424,8 @@ class Workout extends DataClass implements Insertable<Workout> {
       description: description == null && nullToAbsent
           ? const Value.absent()
           : Value(description),
-      author: author == null && nullToAbsent
-          ? const Value.absent()
-          : Value(author),
+      author:
+          author == null && nullToAbsent ? const Value.absent() : Value(author),
       ftp: ftp == null && nullToAbsent ? const Value.absent() : Value(ftp),
       intervalsJson: Value(intervalsJson),
       createdAt: Value(createdAt),
@@ -1706,10 +1436,8 @@ class Workout extends DataClass implements Insertable<Workout> {
     );
   }
 
-  factory Workout.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
+  factory Workout.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Workout(
       id: serializer.fromJson<String>(json['id']),
@@ -1739,43 +1467,41 @@ class Workout extends DataClass implements Insertable<Workout> {
     };
   }
 
-  Workout copyWith({
-    String? id,
-    String? name,
-    Value<String?> description = const Value.absent(),
-    Value<String?> author = const Value.absent(),
-    Value<int?> ftp = const Value.absent(),
-    String? intervalsJson,
-    DateTime? createdAt,
-    Value<DateTime?> lastUsedAt = const Value.absent(),
-    int? useCount,
-  }) => Workout(
-    id: id ?? this.id,
-    name: name ?? this.name,
-    description: description.present ? description.value : this.description,
-    author: author.present ? author.value : this.author,
-    ftp: ftp.present ? ftp.value : this.ftp,
-    intervalsJson: intervalsJson ?? this.intervalsJson,
-    createdAt: createdAt ?? this.createdAt,
-    lastUsedAt: lastUsedAt.present ? lastUsedAt.value : this.lastUsedAt,
-    useCount: useCount ?? this.useCount,
-  );
+  Workout copyWith(
+          {String? id,
+          String? name,
+          Value<String?> description = const Value.absent(),
+          Value<String?> author = const Value.absent(),
+          Value<int?> ftp = const Value.absent(),
+          String? intervalsJson,
+          DateTime? createdAt,
+          Value<DateTime?> lastUsedAt = const Value.absent(),
+          int? useCount}) =>
+      Workout(
+        id: id ?? this.id,
+        name: name ?? this.name,
+        description: description.present ? description.value : this.description,
+        author: author.present ? author.value : this.author,
+        ftp: ftp.present ? ftp.value : this.ftp,
+        intervalsJson: intervalsJson ?? this.intervalsJson,
+        createdAt: createdAt ?? this.createdAt,
+        lastUsedAt: lastUsedAt.present ? lastUsedAt.value : this.lastUsedAt,
+        useCount: useCount ?? this.useCount,
+      );
   Workout copyWithCompanion(WorkoutsCompanion data) {
     return Workout(
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
-      description: data.description.present
-          ? data.description.value
-          : this.description,
+      description:
+          data.description.present ? data.description.value : this.description,
       author: data.author.present ? data.author.value : this.author,
       ftp: data.ftp.present ? data.ftp.value : this.ftp,
       intervalsJson: data.intervalsJson.present
           ? data.intervalsJson.value
           : this.intervalsJson,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
-      lastUsedAt: data.lastUsedAt.present
-          ? data.lastUsedAt.value
-          : this.lastUsedAt,
+      lastUsedAt:
+          data.lastUsedAt.present ? data.lastUsedAt.value : this.lastUsedAt,
       useCount: data.useCount.present ? data.useCount.value : this.useCount,
     );
   }
@@ -1797,17 +1523,8 @@ class Workout extends DataClass implements Insertable<Workout> {
   }
 
   @override
-  int get hashCode => Object.hash(
-    id,
-    name,
-    description,
-    author,
-    ftp,
-    intervalsJson,
-    createdAt,
-    lastUsedAt,
-    useCount,
-  );
+  int get hashCode => Object.hash(id, name, description, author, ftp,
+      intervalsJson, createdAt, lastUsedAt, useCount);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1857,10 +1574,10 @@ class WorkoutsCompanion extends UpdateCompanion<Workout> {
     this.lastUsedAt = const Value.absent(),
     this.useCount = const Value.absent(),
     this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       name = Value(name),
-       intervalsJson = Value(intervalsJson),
-       createdAt = Value(createdAt);
+  })  : id = Value(id),
+        name = Value(name),
+        intervalsJson = Value(intervalsJson),
+        createdAt = Value(createdAt);
   static Insertable<Workout> custom({
     Expression<String>? id,
     Expression<String>? name,
@@ -1887,18 +1604,17 @@ class WorkoutsCompanion extends UpdateCompanion<Workout> {
     });
   }
 
-  WorkoutsCompanion copyWith({
-    Value<String>? id,
-    Value<String>? name,
-    Value<String?>? description,
-    Value<String?>? author,
-    Value<int?>? ftp,
-    Value<String>? intervalsJson,
-    Value<DateTime>? createdAt,
-    Value<DateTime?>? lastUsedAt,
-    Value<int>? useCount,
-    Value<int>? rowid,
-  }) {
+  WorkoutsCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? name,
+      Value<String?>? description,
+      Value<String?>? author,
+      Value<int?>? ftp,
+      Value<String>? intervalsJson,
+      Value<DateTime>? createdAt,
+      Value<DateTime?>? lastUsedAt,
+      Value<int>? useCount,
+      Value<int>? rowid}) {
     return WorkoutsCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
@@ -1977,70 +1693,63 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [
-    rides,
-    rideSamples,
-    workouts,
-  ];
+  List<DatabaseSchemaEntity> get allSchemaEntities =>
+      [rides, rideSamples, workouts];
 }
 
-typedef $$RidesTableCreateCompanionBuilder =
-    RidesCompanion Function({
-      required String id,
-      required DateTime startTime,
-      Value<DateTime?> endTime,
-      required String mode,
-      Value<int> durationSeconds,
-      Value<int> totalDistance,
-      Value<int> totalCalories,
-      Value<int?> averagePower,
-      Value<int?> maxPower,
-      Value<int?> averageCadence,
-      Value<int?> averageHeartRate,
-      Value<double?> averageSpeed,
-      Value<String?> workoutName,
-      Value<String?> workoutId,
-      Value<int> rowid,
-    });
-typedef $$RidesTableUpdateCompanionBuilder =
-    RidesCompanion Function({
-      Value<String> id,
-      Value<DateTime> startTime,
-      Value<DateTime?> endTime,
-      Value<String> mode,
-      Value<int> durationSeconds,
-      Value<int> totalDistance,
-      Value<int> totalCalories,
-      Value<int?> averagePower,
-      Value<int?> maxPower,
-      Value<int?> averageCadence,
-      Value<int?> averageHeartRate,
-      Value<double?> averageSpeed,
-      Value<String?> workoutName,
-      Value<String?> workoutId,
-      Value<int> rowid,
-    });
+typedef $$RidesTableCreateCompanionBuilder = RidesCompanion Function({
+  required String id,
+  Value<String> name,
+  required DateTime startTime,
+  Value<DateTime?> endTime,
+  required String mode,
+  Value<int> durationSeconds,
+  Value<int> totalDistance,
+  Value<int> totalCalories,
+  Value<int?> averagePower,
+  Value<int?> maxPower,
+  Value<int?> averageCadence,
+  Value<int?> averageHeartRate,
+  Value<double?> averageSpeed,
+  Value<String?> workoutName,
+  Value<String?> workoutId,
+  Value<int> rowid,
+});
+typedef $$RidesTableUpdateCompanionBuilder = RidesCompanion Function({
+  Value<String> id,
+  Value<String> name,
+  Value<DateTime> startTime,
+  Value<DateTime?> endTime,
+  Value<String> mode,
+  Value<int> durationSeconds,
+  Value<int> totalDistance,
+  Value<int> totalCalories,
+  Value<int?> averagePower,
+  Value<int?> maxPower,
+  Value<int?> averageCadence,
+  Value<int?> averageHeartRate,
+  Value<double?> averageSpeed,
+  Value<String?> workoutName,
+  Value<String?> workoutId,
+  Value<int> rowid,
+});
 
 final class $$RidesTableReferences
     extends BaseReferences<_$AppDatabase, $RidesTable, Ride> {
   $$RidesTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
   static MultiTypedResultKey<$RideSamplesTable, List<RideSample>>
-  _rideSamplesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.rideSamples,
-    aliasName: $_aliasNameGenerator(db.rides.id, db.rideSamples.rideId),
-  );
+      _rideSamplesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+          db.rideSamples,
+          aliasName: $_aliasNameGenerator(db.rides.id, db.rideSamples.rideId));
 
   $$RideSamplesTableProcessedTableManager get rideSamplesRefs {
-    final manager = $$RideSamplesTableTableManager(
-      $_db,
-      $_db.rideSamples,
-    ).filter((f) => f.rideId.id.sqlEquals($_itemColumn<String>('id')!));
+    final manager = $$RideSamplesTableTableManager($_db, $_db.rideSamples)
+        .filter((f) => f.rideId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_rideSamplesRefsTable($_db));
     return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
+        manager.$state.copyWith(prefetchedData: cache));
   }
 }
 
@@ -2053,97 +1762,71 @@ class $$RidesTableFilterComposer extends Composer<_$AppDatabase, $RidesTable> {
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get startTime => $composableBuilder(
-    column: $table.startTime,
-    builder: (column) => ColumnFilters(column),
-  );
+      column: $table.startTime, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get endTime => $composableBuilder(
-    column: $table.endTime,
-    builder: (column) => ColumnFilters(column),
-  );
+      column: $table.endTime, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get mode => $composableBuilder(
-    column: $table.mode,
-    builder: (column) => ColumnFilters(column),
-  );
+      column: $table.mode, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get durationSeconds => $composableBuilder(
-    column: $table.durationSeconds,
-    builder: (column) => ColumnFilters(column),
-  );
+      column: $table.durationSeconds,
+      builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get totalDistance => $composableBuilder(
-    column: $table.totalDistance,
-    builder: (column) => ColumnFilters(column),
-  );
+      column: $table.totalDistance, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get totalCalories => $composableBuilder(
-    column: $table.totalCalories,
-    builder: (column) => ColumnFilters(column),
-  );
+      column: $table.totalCalories, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get averagePower => $composableBuilder(
-    column: $table.averagePower,
-    builder: (column) => ColumnFilters(column),
-  );
+      column: $table.averagePower, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get maxPower => $composableBuilder(
-    column: $table.maxPower,
-    builder: (column) => ColumnFilters(column),
-  );
+      column: $table.maxPower, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get averageCadence => $composableBuilder(
-    column: $table.averageCadence,
-    builder: (column) => ColumnFilters(column),
-  );
+      column: $table.averageCadence,
+      builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get averageHeartRate => $composableBuilder(
-    column: $table.averageHeartRate,
-    builder: (column) => ColumnFilters(column),
-  );
+      column: $table.averageHeartRate,
+      builder: (column) => ColumnFilters(column));
 
   ColumnFilters<double> get averageSpeed => $composableBuilder(
-    column: $table.averageSpeed,
-    builder: (column) => ColumnFilters(column),
-  );
+      column: $table.averageSpeed, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get workoutName => $composableBuilder(
-    column: $table.workoutName,
-    builder: (column) => ColumnFilters(column),
-  );
+      column: $table.workoutName, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get workoutId => $composableBuilder(
-    column: $table.workoutId,
-    builder: (column) => ColumnFilters(column),
-  );
+      column: $table.workoutId, builder: (column) => ColumnFilters(column));
 
   Expression<bool> rideSamplesRefs(
-    Expression<bool> Function($$RideSamplesTableFilterComposer f) f,
-  ) {
+      Expression<bool> Function($$RideSamplesTableFilterComposer f) f) {
     final $$RideSamplesTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.rideSamples,
-      getReferencedColumn: (t) => t.rideId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$RideSamplesTableFilterComposer(
-            $db: $db,
-            $table: $db.rideSamples,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.rideSamples,
+        getReferencedColumn: (t) => t.rideId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$RideSamplesTableFilterComposer(
+              $db: $db,
+              $table: $db.rideSamples,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
     return f(composer);
   }
 }
@@ -2158,74 +1841,56 @@ class $$RidesTableOrderingComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<DateTime> get startTime => $composableBuilder(
-    column: $table.startTime,
-    builder: (column) => ColumnOrderings(column),
-  );
+      column: $table.startTime, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<DateTime> get endTime => $composableBuilder(
-    column: $table.endTime,
-    builder: (column) => ColumnOrderings(column),
-  );
+      column: $table.endTime, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<String> get mode => $composableBuilder(
-    column: $table.mode,
-    builder: (column) => ColumnOrderings(column),
-  );
+      column: $table.mode, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<int> get durationSeconds => $composableBuilder(
-    column: $table.durationSeconds,
-    builder: (column) => ColumnOrderings(column),
-  );
+      column: $table.durationSeconds,
+      builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<int> get totalDistance => $composableBuilder(
-    column: $table.totalDistance,
-    builder: (column) => ColumnOrderings(column),
-  );
+      column: $table.totalDistance,
+      builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<int> get totalCalories => $composableBuilder(
-    column: $table.totalCalories,
-    builder: (column) => ColumnOrderings(column),
-  );
+      column: $table.totalCalories,
+      builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<int> get averagePower => $composableBuilder(
-    column: $table.averagePower,
-    builder: (column) => ColumnOrderings(column),
-  );
+      column: $table.averagePower,
+      builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<int> get maxPower => $composableBuilder(
-    column: $table.maxPower,
-    builder: (column) => ColumnOrderings(column),
-  );
+      column: $table.maxPower, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<int> get averageCadence => $composableBuilder(
-    column: $table.averageCadence,
-    builder: (column) => ColumnOrderings(column),
-  );
+      column: $table.averageCadence,
+      builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<int> get averageHeartRate => $composableBuilder(
-    column: $table.averageHeartRate,
-    builder: (column) => ColumnOrderings(column),
-  );
+      column: $table.averageHeartRate,
+      builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<double> get averageSpeed => $composableBuilder(
-    column: $table.averageSpeed,
-    builder: (column) => ColumnOrderings(column),
-  );
+      column: $table.averageSpeed,
+      builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<String> get workoutName => $composableBuilder(
-    column: $table.workoutName,
-    builder: (column) => ColumnOrderings(column),
-  );
+      column: $table.workoutName, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<String> get workoutId => $composableBuilder(
-    column: $table.workoutId,
-    builder: (column) => ColumnOrderings(column),
-  );
+      column: $table.workoutId, builder: (column) => ColumnOrderings(column));
 }
 
 class $$RidesTableAnnotationComposer
@@ -2240,6 +1905,9 @@ class $$RidesTableAnnotationComposer
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
   GeneratedColumn<DateTime> get startTime =>
       $composableBuilder(column: $table.startTime, builder: (column) => column);
 
@@ -2250,95 +1918,71 @@ class $$RidesTableAnnotationComposer
       $composableBuilder(column: $table.mode, builder: (column) => column);
 
   GeneratedColumn<int> get durationSeconds => $composableBuilder(
-    column: $table.durationSeconds,
-    builder: (column) => column,
-  );
+      column: $table.durationSeconds, builder: (column) => column);
 
   GeneratedColumn<int> get totalDistance => $composableBuilder(
-    column: $table.totalDistance,
-    builder: (column) => column,
-  );
+      column: $table.totalDistance, builder: (column) => column);
 
   GeneratedColumn<int> get totalCalories => $composableBuilder(
-    column: $table.totalCalories,
-    builder: (column) => column,
-  );
+      column: $table.totalCalories, builder: (column) => column);
 
   GeneratedColumn<int> get averagePower => $composableBuilder(
-    column: $table.averagePower,
-    builder: (column) => column,
-  );
+      column: $table.averagePower, builder: (column) => column);
 
   GeneratedColumn<int> get maxPower =>
       $composableBuilder(column: $table.maxPower, builder: (column) => column);
 
   GeneratedColumn<int> get averageCadence => $composableBuilder(
-    column: $table.averageCadence,
-    builder: (column) => column,
-  );
+      column: $table.averageCadence, builder: (column) => column);
 
   GeneratedColumn<int> get averageHeartRate => $composableBuilder(
-    column: $table.averageHeartRate,
-    builder: (column) => column,
-  );
+      column: $table.averageHeartRate, builder: (column) => column);
 
   GeneratedColumn<double> get averageSpeed => $composableBuilder(
-    column: $table.averageSpeed,
-    builder: (column) => column,
-  );
+      column: $table.averageSpeed, builder: (column) => column);
 
   GeneratedColumn<String> get workoutName => $composableBuilder(
-    column: $table.workoutName,
-    builder: (column) => column,
-  );
+      column: $table.workoutName, builder: (column) => column);
 
   GeneratedColumn<String> get workoutId =>
       $composableBuilder(column: $table.workoutId, builder: (column) => column);
 
   Expression<T> rideSamplesRefs<T extends Object>(
-    Expression<T> Function($$RideSamplesTableAnnotationComposer a) f,
-  ) {
+      Expression<T> Function($$RideSamplesTableAnnotationComposer a) f) {
     final $$RideSamplesTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.rideSamples,
-      getReferencedColumn: (t) => t.rideId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$RideSamplesTableAnnotationComposer(
-            $db: $db,
-            $table: $db.rideSamples,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.rideSamples,
+        getReferencedColumn: (t) => t.rideId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$RideSamplesTableAnnotationComposer(
+              $db: $db,
+              $table: $db.rideSamples,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
     return f(composer);
   }
 }
 
-class $$RidesTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $RidesTable,
-          Ride,
-          $$RidesTableFilterComposer,
-          $$RidesTableOrderingComposer,
-          $$RidesTableAnnotationComposer,
-          $$RidesTableCreateCompanionBuilder,
-          $$RidesTableUpdateCompanionBuilder,
-          (Ride, $$RidesTableReferences),
-          Ride,
-          PrefetchHooks Function({bool rideSamplesRefs})
-        > {
+class $$RidesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $RidesTable,
+    Ride,
+    $$RidesTableFilterComposer,
+    $$RidesTableOrderingComposer,
+    $$RidesTableAnnotationComposer,
+    $$RidesTableCreateCompanionBuilder,
+    $$RidesTableUpdateCompanionBuilder,
+    (Ride, $$RidesTableReferences),
+    Ride,
+    PrefetchHooks Function({bool rideSamplesRefs})> {
   $$RidesTableTableManager(_$AppDatabase db, $RidesTable table)
-    : super(
-        TableManagerState(
+      : super(TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -2347,79 +1991,81 @@ class $$RidesTableTableManager
               $$RidesTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $$RidesTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<DateTime> startTime = const Value.absent(),
-                Value<DateTime?> endTime = const Value.absent(),
-                Value<String> mode = const Value.absent(),
-                Value<int> durationSeconds = const Value.absent(),
-                Value<int> totalDistance = const Value.absent(),
-                Value<int> totalCalories = const Value.absent(),
-                Value<int?> averagePower = const Value.absent(),
-                Value<int?> maxPower = const Value.absent(),
-                Value<int?> averageCadence = const Value.absent(),
-                Value<int?> averageHeartRate = const Value.absent(),
-                Value<double?> averageSpeed = const Value.absent(),
-                Value<String?> workoutName = const Value.absent(),
-                Value<String?> workoutId = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => RidesCompanion(
-                id: id,
-                startTime: startTime,
-                endTime: endTime,
-                mode: mode,
-                durationSeconds: durationSeconds,
-                totalDistance: totalDistance,
-                totalCalories: totalCalories,
-                averagePower: averagePower,
-                maxPower: maxPower,
-                averageCadence: averageCadence,
-                averageHeartRate: averageHeartRate,
-                averageSpeed: averageSpeed,
-                workoutName: workoutName,
-                workoutId: workoutId,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required String id,
-                required DateTime startTime,
-                Value<DateTime?> endTime = const Value.absent(),
-                required String mode,
-                Value<int> durationSeconds = const Value.absent(),
-                Value<int> totalDistance = const Value.absent(),
-                Value<int> totalCalories = const Value.absent(),
-                Value<int?> averagePower = const Value.absent(),
-                Value<int?> maxPower = const Value.absent(),
-                Value<int?> averageCadence = const Value.absent(),
-                Value<int?> averageHeartRate = const Value.absent(),
-                Value<double?> averageSpeed = const Value.absent(),
-                Value<String?> workoutName = const Value.absent(),
-                Value<String?> workoutId = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => RidesCompanion.insert(
-                id: id,
-                startTime: startTime,
-                endTime: endTime,
-                mode: mode,
-                durationSeconds: durationSeconds,
-                totalDistance: totalDistance,
-                totalCalories: totalCalories,
-                averagePower: averagePower,
-                maxPower: maxPower,
-                averageCadence: averageCadence,
-                averageHeartRate: averageHeartRate,
-                averageSpeed: averageSpeed,
-                workoutName: workoutName,
-                workoutId: workoutId,
-                rowid: rowid,
-              ),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<DateTime> startTime = const Value.absent(),
+            Value<DateTime?> endTime = const Value.absent(),
+            Value<String> mode = const Value.absent(),
+            Value<int> durationSeconds = const Value.absent(),
+            Value<int> totalDistance = const Value.absent(),
+            Value<int> totalCalories = const Value.absent(),
+            Value<int?> averagePower = const Value.absent(),
+            Value<int?> maxPower = const Value.absent(),
+            Value<int?> averageCadence = const Value.absent(),
+            Value<int?> averageHeartRate = const Value.absent(),
+            Value<double?> averageSpeed = const Value.absent(),
+            Value<String?> workoutName = const Value.absent(),
+            Value<String?> workoutId = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              RidesCompanion(
+            id: id,
+            name: name,
+            startTime: startTime,
+            endTime: endTime,
+            mode: mode,
+            durationSeconds: durationSeconds,
+            totalDistance: totalDistance,
+            totalCalories: totalCalories,
+            averagePower: averagePower,
+            maxPower: maxPower,
+            averageCadence: averageCadence,
+            averageHeartRate: averageHeartRate,
+            averageSpeed: averageSpeed,
+            workoutName: workoutName,
+            workoutId: workoutId,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            Value<String> name = const Value.absent(),
+            required DateTime startTime,
+            Value<DateTime?> endTime = const Value.absent(),
+            required String mode,
+            Value<int> durationSeconds = const Value.absent(),
+            Value<int> totalDistance = const Value.absent(),
+            Value<int> totalCalories = const Value.absent(),
+            Value<int?> averagePower = const Value.absent(),
+            Value<int?> maxPower = const Value.absent(),
+            Value<int?> averageCadence = const Value.absent(),
+            Value<int?> averageHeartRate = const Value.absent(),
+            Value<double?> averageSpeed = const Value.absent(),
+            Value<String?> workoutName = const Value.absent(),
+            Value<String?> workoutId = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              RidesCompanion.insert(
+            id: id,
+            name: name,
+            startTime: startTime,
+            endTime: endTime,
+            mode: mode,
+            durationSeconds: durationSeconds,
+            totalDistance: totalDistance,
+            totalCalories: totalCalories,
+            averagePower: averagePower,
+            maxPower: maxPower,
+            averageCadence: averageCadence,
+            averageHeartRate: averageHeartRate,
+            averageSpeed: averageSpeed,
+            workoutName: workoutName,
+            workoutId: workoutId,
+            rowid: rowid,
+          ),
           withReferenceMapper: (p0) => p0
-              .map(
-                (e) =>
-                    (e.readTable(table), $$RidesTableReferences(db, table, e)),
-              )
+              .map((e) =>
+                  (e.readTable(table), $$RidesTableReferences(db, table, e)))
               .toList(),
           prefetchHooksCallback: ({rideSamplesRefs = false}) {
             return PrefetchHooks(
@@ -2430,82 +2076,76 @@ class $$RidesTableTableManager
                 return [
                   if (rideSamplesRefs)
                     await $_getPrefetchedData<Ride, $RidesTable, RideSample>(
-                      currentTable: table,
-                      referencedTable: $$RidesTableReferences
-                          ._rideSamplesRefsTable(db),
-                      managerFromTypedResult: (p0) =>
-                          $$RidesTableReferences(db, table, p0).rideSamplesRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.rideId == item.id),
-                      typedResults: items,
-                    ),
+                        currentTable: table,
+                        referencedTable:
+                            $$RidesTableReferences._rideSamplesRefsTable(db),
+                        managerFromTypedResult: (p0) =>
+                            $$RidesTableReferences(db, table, p0)
+                                .rideSamplesRefs,
+                        referencedItemsForCurrentItem: (item,
+                                referencedItems) =>
+                            referencedItems.where((e) => e.rideId == item.id),
+                        typedResults: items)
                 ];
               },
             );
           },
-        ),
-      );
+        ));
 }
 
-typedef $$RidesTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $RidesTable,
-      Ride,
-      $$RidesTableFilterComposer,
-      $$RidesTableOrderingComposer,
-      $$RidesTableAnnotationComposer,
-      $$RidesTableCreateCompanionBuilder,
-      $$RidesTableUpdateCompanionBuilder,
-      (Ride, $$RidesTableReferences),
-      Ride,
-      PrefetchHooks Function({bool rideSamplesRefs})
-    >;
-typedef $$RideSamplesTableCreateCompanionBuilder =
-    RideSamplesCompanion Function({
-      Value<int> id,
-      required String rideId,
-      required DateTime timestamp,
-      Value<int?> power,
-      Value<int?> cadence,
-      Value<double?> speed,
-      Value<int?> heartRate,
-      Value<int?> distance,
-      Value<int?> calories,
-    });
-typedef $$RideSamplesTableUpdateCompanionBuilder =
-    RideSamplesCompanion Function({
-      Value<int> id,
-      Value<String> rideId,
-      Value<DateTime> timestamp,
-      Value<int?> power,
-      Value<int?> cadence,
-      Value<double?> speed,
-      Value<int?> heartRate,
-      Value<int?> distance,
-      Value<int?> calories,
-    });
+typedef $$RidesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $RidesTable,
+    Ride,
+    $$RidesTableFilterComposer,
+    $$RidesTableOrderingComposer,
+    $$RidesTableAnnotationComposer,
+    $$RidesTableCreateCompanionBuilder,
+    $$RidesTableUpdateCompanionBuilder,
+    (Ride, $$RidesTableReferences),
+    Ride,
+    PrefetchHooks Function({bool rideSamplesRefs})>;
+typedef $$RideSamplesTableCreateCompanionBuilder = RideSamplesCompanion
+    Function({
+  Value<int> id,
+  required String rideId,
+  required DateTime timestamp,
+  Value<int?> power,
+  Value<int?> cadence,
+  Value<double?> speed,
+  Value<int?> heartRate,
+  Value<int?> distance,
+  Value<int?> calories,
+});
+typedef $$RideSamplesTableUpdateCompanionBuilder = RideSamplesCompanion
+    Function({
+  Value<int> id,
+  Value<String> rideId,
+  Value<DateTime> timestamp,
+  Value<int?> power,
+  Value<int?> cadence,
+  Value<double?> speed,
+  Value<int?> heartRate,
+  Value<int?> distance,
+  Value<int?> calories,
+});
 
 final class $$RideSamplesTableReferences
     extends BaseReferences<_$AppDatabase, $RideSamplesTable, RideSample> {
   $$RideSamplesTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static $RidesTable _rideIdTable(_$AppDatabase db) => db.rides.createAlias(
-    $_aliasNameGenerator(db.rideSamples.rideId, db.rides.id),
-  );
+  static $RidesTable _rideIdTable(_$AppDatabase db) => db.rides
+      .createAlias($_aliasNameGenerator(db.rideSamples.rideId, db.rides.id));
 
   $$RidesTableProcessedTableManager get rideId {
     final $_column = $_itemColumn<String>('ride_id')!;
 
-    final manager = $$RidesTableTableManager(
-      $_db,
-      $_db.rides,
-    ).filter((f) => f.id.sqlEquals($_column));
+    final manager = $$RidesTableTableManager($_db, $_db.rides)
+        .filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_rideIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
+        manager.$state.copyWith(prefetchedData: [item]));
   }
 }
 
@@ -2519,65 +2159,46 @@ class $$RideSamplesTableFilterComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<int> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
+      column: $table.id, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get timestamp => $composableBuilder(
-    column: $table.timestamp,
-    builder: (column) => ColumnFilters(column),
-  );
+      column: $table.timestamp, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get power => $composableBuilder(
-    column: $table.power,
-    builder: (column) => ColumnFilters(column),
-  );
+      column: $table.power, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get cadence => $composableBuilder(
-    column: $table.cadence,
-    builder: (column) => ColumnFilters(column),
-  );
+      column: $table.cadence, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<double> get speed => $composableBuilder(
-    column: $table.speed,
-    builder: (column) => ColumnFilters(column),
-  );
+      column: $table.speed, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get heartRate => $composableBuilder(
-    column: $table.heartRate,
-    builder: (column) => ColumnFilters(column),
-  );
+      column: $table.heartRate, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get distance => $composableBuilder(
-    column: $table.distance,
-    builder: (column) => ColumnFilters(column),
-  );
+      column: $table.distance, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get calories => $composableBuilder(
-    column: $table.calories,
-    builder: (column) => ColumnFilters(column),
-  );
+      column: $table.calories, builder: (column) => ColumnFilters(column));
 
   $$RidesTableFilterComposer get rideId {
     final $$RidesTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.rideId,
-      referencedTable: $db.rides,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$RidesTableFilterComposer(
-            $db: $db,
-            $table: $db.rides,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
+        composer: this,
+        getCurrentColumn: (t) => t.rideId,
+        referencedTable: $db.rides,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$RidesTableFilterComposer(
+              $db: $db,
+              $table: $db.rides,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
     return composer;
   }
 }
@@ -2592,65 +2213,46 @@ class $$RideSamplesTableOrderingComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<int> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
+      column: $table.id, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<DateTime> get timestamp => $composableBuilder(
-    column: $table.timestamp,
-    builder: (column) => ColumnOrderings(column),
-  );
+      column: $table.timestamp, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<int> get power => $composableBuilder(
-    column: $table.power,
-    builder: (column) => ColumnOrderings(column),
-  );
+      column: $table.power, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<int> get cadence => $composableBuilder(
-    column: $table.cadence,
-    builder: (column) => ColumnOrderings(column),
-  );
+      column: $table.cadence, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<double> get speed => $composableBuilder(
-    column: $table.speed,
-    builder: (column) => ColumnOrderings(column),
-  );
+      column: $table.speed, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<int> get heartRate => $composableBuilder(
-    column: $table.heartRate,
-    builder: (column) => ColumnOrderings(column),
-  );
+      column: $table.heartRate, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<int> get distance => $composableBuilder(
-    column: $table.distance,
-    builder: (column) => ColumnOrderings(column),
-  );
+      column: $table.distance, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<int> get calories => $composableBuilder(
-    column: $table.calories,
-    builder: (column) => ColumnOrderings(column),
-  );
+      column: $table.calories, builder: (column) => ColumnOrderings(column));
 
   $$RidesTableOrderingComposer get rideId {
     final $$RidesTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.rideId,
-      referencedTable: $db.rides,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$RidesTableOrderingComposer(
-            $db: $db,
-            $table: $db.rides,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
+        composer: this,
+        getCurrentColumn: (t) => t.rideId,
+        referencedTable: $db.rides,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$RidesTableOrderingComposer(
+              $db: $db,
+              $table: $db.rides,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
     return composer;
   }
 }
@@ -2690,46 +2292,39 @@ class $$RideSamplesTableAnnotationComposer
 
   $$RidesTableAnnotationComposer get rideId {
     final $$RidesTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.rideId,
-      referencedTable: $db.rides,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$RidesTableAnnotationComposer(
-            $db: $db,
-            $table: $db.rides,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
+        composer: this,
+        getCurrentColumn: (t) => t.rideId,
+        referencedTable: $db.rides,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$RidesTableAnnotationComposer(
+              $db: $db,
+              $table: $db.rides,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
     return composer;
   }
 }
 
-class $$RideSamplesTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $RideSamplesTable,
-          RideSample,
-          $$RideSamplesTableFilterComposer,
-          $$RideSamplesTableOrderingComposer,
-          $$RideSamplesTableAnnotationComposer,
-          $$RideSamplesTableCreateCompanionBuilder,
-          $$RideSamplesTableUpdateCompanionBuilder,
-          (RideSample, $$RideSamplesTableReferences),
-          RideSample,
-          PrefetchHooks Function({bool rideId})
-        > {
+class $$RideSamplesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $RideSamplesTable,
+    RideSample,
+    $$RideSamplesTableFilterComposer,
+    $$RideSamplesTableOrderingComposer,
+    $$RideSamplesTableAnnotationComposer,
+    $$RideSamplesTableCreateCompanionBuilder,
+    $$RideSamplesTableUpdateCompanionBuilder,
+    (RideSample, $$RideSamplesTableReferences),
+    RideSample,
+    PrefetchHooks Function({bool rideId})> {
   $$RideSamplesTableTableManager(_$AppDatabase db, $RideSamplesTable table)
-    : super(
-        TableManagerState(
+      : super(TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -2738,65 +2333,62 @@ class $$RideSamplesTableTableManager
               $$RideSamplesTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $$RideSamplesTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<int> id = const Value.absent(),
-                Value<String> rideId = const Value.absent(),
-                Value<DateTime> timestamp = const Value.absent(),
-                Value<int?> power = const Value.absent(),
-                Value<int?> cadence = const Value.absent(),
-                Value<double?> speed = const Value.absent(),
-                Value<int?> heartRate = const Value.absent(),
-                Value<int?> distance = const Value.absent(),
-                Value<int?> calories = const Value.absent(),
-              }) => RideSamplesCompanion(
-                id: id,
-                rideId: rideId,
-                timestamp: timestamp,
-                power: power,
-                cadence: cadence,
-                speed: speed,
-                heartRate: heartRate,
-                distance: distance,
-                calories: calories,
-              ),
-          createCompanionCallback:
-              ({
-                Value<int> id = const Value.absent(),
-                required String rideId,
-                required DateTime timestamp,
-                Value<int?> power = const Value.absent(),
-                Value<int?> cadence = const Value.absent(),
-                Value<double?> speed = const Value.absent(),
-                Value<int?> heartRate = const Value.absent(),
-                Value<int?> distance = const Value.absent(),
-                Value<int?> calories = const Value.absent(),
-              }) => RideSamplesCompanion.insert(
-                id: id,
-                rideId: rideId,
-                timestamp: timestamp,
-                power: power,
-                cadence: cadence,
-                speed: speed,
-                heartRate: heartRate,
-                distance: distance,
-                calories: calories,
-              ),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> rideId = const Value.absent(),
+            Value<DateTime> timestamp = const Value.absent(),
+            Value<int?> power = const Value.absent(),
+            Value<int?> cadence = const Value.absent(),
+            Value<double?> speed = const Value.absent(),
+            Value<int?> heartRate = const Value.absent(),
+            Value<int?> distance = const Value.absent(),
+            Value<int?> calories = const Value.absent(),
+          }) =>
+              RideSamplesCompanion(
+            id: id,
+            rideId: rideId,
+            timestamp: timestamp,
+            power: power,
+            cadence: cadence,
+            speed: speed,
+            heartRate: heartRate,
+            distance: distance,
+            calories: calories,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required String rideId,
+            required DateTime timestamp,
+            Value<int?> power = const Value.absent(),
+            Value<int?> cadence = const Value.absent(),
+            Value<double?> speed = const Value.absent(),
+            Value<int?> heartRate = const Value.absent(),
+            Value<int?> distance = const Value.absent(),
+            Value<int?> calories = const Value.absent(),
+          }) =>
+              RideSamplesCompanion.insert(
+            id: id,
+            rideId: rideId,
+            timestamp: timestamp,
+            power: power,
+            cadence: cadence,
+            speed: speed,
+            heartRate: heartRate,
+            distance: distance,
+            calories: calories,
+          ),
           withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$RideSamplesTableReferences(db, table, e),
-                ),
-              )
+              .map((e) => (
+                    e.readTable(table),
+                    $$RideSamplesTableReferences(db, table, e)
+                  ))
               .toList(),
           prefetchHooksCallback: ({rideId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
+              addJoins: <
+                  T extends TableManagerState<
                       dynamic,
                       dynamic,
                       dynamic,
@@ -2807,74 +2399,64 @@ class $$RideSamplesTableTableManager
                       dynamic,
                       dynamic,
                       dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (rideId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.rideId,
-                                referencedTable: $$RideSamplesTableReferences
-                                    ._rideIdTable(db),
-                                referencedColumn: $$RideSamplesTableReferences
-                                    ._rideIdTable(db)
-                                    .id,
-                              )
-                              as T;
-                    }
+                      dynamic>>(state) {
+                if (rideId) {
+                  state = state.withJoin(
+                    currentTable: table,
+                    currentColumn: table.rideId,
+                    referencedTable:
+                        $$RideSamplesTableReferences._rideIdTable(db),
+                    referencedColumn:
+                        $$RideSamplesTableReferences._rideIdTable(db).id,
+                  ) as T;
+                }
 
-                    return state;
-                  },
+                return state;
+              },
               getPrefetchedDataCallback: (items) async {
                 return [];
               },
             );
           },
-        ),
-      );
+        ));
 }
 
-typedef $$RideSamplesTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $RideSamplesTable,
-      RideSample,
-      $$RideSamplesTableFilterComposer,
-      $$RideSamplesTableOrderingComposer,
-      $$RideSamplesTableAnnotationComposer,
-      $$RideSamplesTableCreateCompanionBuilder,
-      $$RideSamplesTableUpdateCompanionBuilder,
-      (RideSample, $$RideSamplesTableReferences),
-      RideSample,
-      PrefetchHooks Function({bool rideId})
-    >;
-typedef $$WorkoutsTableCreateCompanionBuilder =
-    WorkoutsCompanion Function({
-      required String id,
-      required String name,
-      Value<String?> description,
-      Value<String?> author,
-      Value<int?> ftp,
-      required String intervalsJson,
-      required DateTime createdAt,
-      Value<DateTime?> lastUsedAt,
-      Value<int> useCount,
-      Value<int> rowid,
-    });
-typedef $$WorkoutsTableUpdateCompanionBuilder =
-    WorkoutsCompanion Function({
-      Value<String> id,
-      Value<String> name,
-      Value<String?> description,
-      Value<String?> author,
-      Value<int?> ftp,
-      Value<String> intervalsJson,
-      Value<DateTime> createdAt,
-      Value<DateTime?> lastUsedAt,
-      Value<int> useCount,
-      Value<int> rowid,
-    });
+typedef $$RideSamplesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $RideSamplesTable,
+    RideSample,
+    $$RideSamplesTableFilterComposer,
+    $$RideSamplesTableOrderingComposer,
+    $$RideSamplesTableAnnotationComposer,
+    $$RideSamplesTableCreateCompanionBuilder,
+    $$RideSamplesTableUpdateCompanionBuilder,
+    (RideSample, $$RideSamplesTableReferences),
+    RideSample,
+    PrefetchHooks Function({bool rideId})>;
+typedef $$WorkoutsTableCreateCompanionBuilder = WorkoutsCompanion Function({
+  required String id,
+  required String name,
+  Value<String?> description,
+  Value<String?> author,
+  Value<int?> ftp,
+  required String intervalsJson,
+  required DateTime createdAt,
+  Value<DateTime?> lastUsedAt,
+  Value<int> useCount,
+  Value<int> rowid,
+});
+typedef $$WorkoutsTableUpdateCompanionBuilder = WorkoutsCompanion Function({
+  Value<String> id,
+  Value<String> name,
+  Value<String?> description,
+  Value<String?> author,
+  Value<int?> ftp,
+  Value<String> intervalsJson,
+  Value<DateTime> createdAt,
+  Value<DateTime?> lastUsedAt,
+  Value<int> useCount,
+  Value<int> rowid,
+});
 
 class $$WorkoutsTableFilterComposer
     extends Composer<_$AppDatabase, $WorkoutsTable> {
@@ -2886,49 +2468,31 @@ class $$WorkoutsTableFilterComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
+      column: $table.id, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get name => $composableBuilder(
-    column: $table.name,
-    builder: (column) => ColumnFilters(column),
-  );
+      column: $table.name, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get description => $composableBuilder(
-    column: $table.description,
-    builder: (column) => ColumnFilters(column),
-  );
+      column: $table.description, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get author => $composableBuilder(
-    column: $table.author,
-    builder: (column) => ColumnFilters(column),
-  );
+      column: $table.author, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get ftp => $composableBuilder(
-    column: $table.ftp,
-    builder: (column) => ColumnFilters(column),
-  );
+      column: $table.ftp, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get intervalsJson => $composableBuilder(
-    column: $table.intervalsJson,
-    builder: (column) => ColumnFilters(column),
-  );
+      column: $table.intervalsJson, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnFilters(column),
-  );
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get lastUsedAt => $composableBuilder(
-    column: $table.lastUsedAt,
-    builder: (column) => ColumnFilters(column),
-  );
+      column: $table.lastUsedAt, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get useCount => $composableBuilder(
-    column: $table.useCount,
-    builder: (column) => ColumnFilters(column),
-  );
+      column: $table.useCount, builder: (column) => ColumnFilters(column));
 }
 
 class $$WorkoutsTableOrderingComposer
@@ -2941,49 +2505,32 @@ class $$WorkoutsTableOrderingComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
+      column: $table.id, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<String> get name => $composableBuilder(
-    column: $table.name,
-    builder: (column) => ColumnOrderings(column),
-  );
+      column: $table.name, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<String> get description => $composableBuilder(
-    column: $table.description,
-    builder: (column) => ColumnOrderings(column),
-  );
+      column: $table.description, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<String> get author => $composableBuilder(
-    column: $table.author,
-    builder: (column) => ColumnOrderings(column),
-  );
+      column: $table.author, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<int> get ftp => $composableBuilder(
-    column: $table.ftp,
-    builder: (column) => ColumnOrderings(column),
-  );
+      column: $table.ftp, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<String> get intervalsJson => $composableBuilder(
-    column: $table.intervalsJson,
-    builder: (column) => ColumnOrderings(column),
-  );
+      column: $table.intervalsJson,
+      builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnOrderings(column),
-  );
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<DateTime> get lastUsedAt => $composableBuilder(
-    column: $table.lastUsedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
+      column: $table.lastUsedAt, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<int> get useCount => $composableBuilder(
-    column: $table.useCount,
-    builder: (column) => ColumnOrderings(column),
-  );
+      column: $table.useCount, builder: (column) => ColumnOrderings(column));
 }
 
 class $$WorkoutsTableAnnotationComposer
@@ -3002,9 +2549,7 @@ class $$WorkoutsTableAnnotationComposer
       $composableBuilder(column: $table.name, builder: (column) => column);
 
   GeneratedColumn<String> get description => $composableBuilder(
-    column: $table.description,
-    builder: (column) => column,
-  );
+      column: $table.description, builder: (column) => column);
 
   GeneratedColumn<String> get author =>
       $composableBuilder(column: $table.author, builder: (column) => column);
@@ -3013,40 +2558,32 @@ class $$WorkoutsTableAnnotationComposer
       $composableBuilder(column: $table.ftp, builder: (column) => column);
 
   GeneratedColumn<String> get intervalsJson => $composableBuilder(
-    column: $table.intervalsJson,
-    builder: (column) => column,
-  );
+      column: $table.intervalsJson, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
   GeneratedColumn<DateTime> get lastUsedAt => $composableBuilder(
-    column: $table.lastUsedAt,
-    builder: (column) => column,
-  );
+      column: $table.lastUsedAt, builder: (column) => column);
 
   GeneratedColumn<int> get useCount =>
       $composableBuilder(column: $table.useCount, builder: (column) => column);
 }
 
-class $$WorkoutsTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $WorkoutsTable,
-          Workout,
-          $$WorkoutsTableFilterComposer,
-          $$WorkoutsTableOrderingComposer,
-          $$WorkoutsTableAnnotationComposer,
-          $$WorkoutsTableCreateCompanionBuilder,
-          $$WorkoutsTableUpdateCompanionBuilder,
-          (Workout, BaseReferences<_$AppDatabase, $WorkoutsTable, Workout>),
-          Workout,
-          PrefetchHooks Function()
-        > {
+class $$WorkoutsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $WorkoutsTable,
+    Workout,
+    $$WorkoutsTableFilterComposer,
+    $$WorkoutsTableOrderingComposer,
+    $$WorkoutsTableAnnotationComposer,
+    $$WorkoutsTableCreateCompanionBuilder,
+    $$WorkoutsTableUpdateCompanionBuilder,
+    (Workout, BaseReferences<_$AppDatabase, $WorkoutsTable, Workout>),
+    Workout,
+    PrefetchHooks Function()> {
   $$WorkoutsTableTableManager(_$AppDatabase db, $WorkoutsTable table)
-    : super(
-        TableManagerState(
+      : super(TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -3055,76 +2592,73 @@ class $$WorkoutsTableTableManager
               $$WorkoutsTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $$WorkoutsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<String> name = const Value.absent(),
-                Value<String?> description = const Value.absent(),
-                Value<String?> author = const Value.absent(),
-                Value<int?> ftp = const Value.absent(),
-                Value<String> intervalsJson = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime?> lastUsedAt = const Value.absent(),
-                Value<int> useCount = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => WorkoutsCompanion(
-                id: id,
-                name: name,
-                description: description,
-                author: author,
-                ftp: ftp,
-                intervalsJson: intervalsJson,
-                createdAt: createdAt,
-                lastUsedAt: lastUsedAt,
-                useCount: useCount,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required String id,
-                required String name,
-                Value<String?> description = const Value.absent(),
-                Value<String?> author = const Value.absent(),
-                Value<int?> ftp = const Value.absent(),
-                required String intervalsJson,
-                required DateTime createdAt,
-                Value<DateTime?> lastUsedAt = const Value.absent(),
-                Value<int> useCount = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => WorkoutsCompanion.insert(
-                id: id,
-                name: name,
-                description: description,
-                author: author,
-                ftp: ftp,
-                intervalsJson: intervalsJson,
-                createdAt: createdAt,
-                lastUsedAt: lastUsedAt,
-                useCount: useCount,
-                rowid: rowid,
-              ),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<String?> description = const Value.absent(),
+            Value<String?> author = const Value.absent(),
+            Value<int?> ftp = const Value.absent(),
+            Value<String> intervalsJson = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime?> lastUsedAt = const Value.absent(),
+            Value<int> useCount = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              WorkoutsCompanion(
+            id: id,
+            name: name,
+            description: description,
+            author: author,
+            ftp: ftp,
+            intervalsJson: intervalsJson,
+            createdAt: createdAt,
+            lastUsedAt: lastUsedAt,
+            useCount: useCount,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String name,
+            Value<String?> description = const Value.absent(),
+            Value<String?> author = const Value.absent(),
+            Value<int?> ftp = const Value.absent(),
+            required String intervalsJson,
+            required DateTime createdAt,
+            Value<DateTime?> lastUsedAt = const Value.absent(),
+            Value<int> useCount = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              WorkoutsCompanion.insert(
+            id: id,
+            name: name,
+            description: description,
+            author: author,
+            ftp: ftp,
+            intervalsJson: intervalsJson,
+            createdAt: createdAt,
+            lastUsedAt: lastUsedAt,
+            useCount: useCount,
+            rowid: rowid,
+          ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
           prefetchHooksCallback: null,
-        ),
-      );
+        ));
 }
 
-typedef $$WorkoutsTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $WorkoutsTable,
-      Workout,
-      $$WorkoutsTableFilterComposer,
-      $$WorkoutsTableOrderingComposer,
-      $$WorkoutsTableAnnotationComposer,
-      $$WorkoutsTableCreateCompanionBuilder,
-      $$WorkoutsTableUpdateCompanionBuilder,
-      (Workout, BaseReferences<_$AppDatabase, $WorkoutsTable, Workout>),
-      Workout,
-      PrefetchHooks Function()
-    >;
+typedef $$WorkoutsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $WorkoutsTable,
+    Workout,
+    $$WorkoutsTableFilterComposer,
+    $$WorkoutsTableOrderingComposer,
+    $$WorkoutsTableAnnotationComposer,
+    $$WorkoutsTableCreateCompanionBuilder,
+    $$WorkoutsTableUpdateCompanionBuilder,
+    (Workout, BaseReferences<_$AppDatabase, $WorkoutsTable, Workout>),
+    Workout,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;

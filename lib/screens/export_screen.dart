@@ -170,6 +170,7 @@ class ExportScreen extends ConsumerWidget {
                           onShareFit: () => _shareFile(context, ride, 'FIT'),
                           onShareTcx: () => _shareFile(context, ride, 'TCX'),
                           onDelete: () => _deleteRide(context, ref, ride),
+                          onEditName: () => _editRideName(context, ref, ride),
                         );
                       },
                     ),
@@ -217,6 +218,43 @@ class ExportScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _editRideName(BuildContext context, WidgetRef ref, RideSummary ride) async {
+    final controller = TextEditingController(text: ride.displayName);
+
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Modifier le nom'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: 'Nom de la session',
+            border: OutlineInputBorder(),
+          ),
+          autofocus: true,
+          textCapitalization: TextCapitalization.sentences,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, controller.text),
+            child: const Text('Enregistrer'),
+          ),
+        ],
+      ),
+    );
+
+    controller.dispose();
+
+    if (newName != null && newName.isNotEmpty) {
+      await ref.read(rideRepositoryProvider).updateRideName(ride.id, newName);
+      ref.invalidate(rideHistoryProvider);
+    }
+  }
+
   void _showStravaDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -254,7 +292,7 @@ class ExportScreen extends ConsumerWidget {
     final power = ride.averagePower ?? 0;
 
     Share.share(
-      'Sortie ${ride.mode.label}\n'
+      '${ride.displayName}\n'
       'Date: $dateStr\n'
       'Duree: $durationMin min\n'
       'Puissance moy: ${power}W',
@@ -276,12 +314,14 @@ class _RideTile extends StatelessWidget {
     required this.onShareFit,
     required this.onShareTcx,
     required this.onDelete,
+    required this.onEditName,
   });
 
   final RideSummary ride;
   final VoidCallback onShareFit;
   final VoidCallback onShareTcx;
   final VoidCallback onDelete;
+  final VoidCallback onEditName;
 
   String _formatDuration(Duration duration) {
     final hours = duration.inHours;
@@ -323,11 +363,22 @@ class _RideTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Sortie ${ride.mode.label}',
-                      style: Theme.of(context).textTheme.titleSmall,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    GestureDetector(
+                      onTap: onEditName,
+                      child: Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              ride.displayName,
+                              style: Theme.of(context).textTheme.titleSmall,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(Icons.edit, size: 14, color: AppColors.textSecondary),
+                        ],
+                      ),
                     ),
                     Text(
                       dateStr,

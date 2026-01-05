@@ -424,58 +424,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     // Show end ride dialog
     if (mounted) {
-      final result = await showDialog<bool>(
+      final result = await showDialog<String?>(
         context: context,
         barrierDismissible: false,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Sortie terminee'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.timer, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Duree: ${_formatElapsedTime(duration)}',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-              if (session.averagePower != null) ...[
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Icon(Icons.flash_on, size: 20),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Puissance moy: ${session.averagePower} W',
-                      style: const TextStyle(fontSize: 14),
-                    ),
-                  ],
-                ),
-              ],
-              const SizedBox(height: 16),
-              const Text('Voulez-vous sauvegarder cette session ?'),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Supprimer'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Sauvegarder'),
-            ),
-          ],
+        builder: (ctx) => _EndRideDialog(
+          duration: duration,
+          averagePower: session.averagePower,
+          defaultName: 'Sortie ${_currentMode.label}',
         ),
       );
 
-      if (result == true && mounted) {
-        // Save ride to database
-        await ref.read(rideRepositoryProvider).saveRide(session);
+      if (result != null && mounted) {
+        // Save ride to database with name
+        await ref.read(rideRepositoryProvider).saveRide(session, name: result);
         // Invalidate ride history to refresh
         ref.invalidate(rideHistoryProvider);
         ref.invalidate(rideStatsProvider);
@@ -571,6 +532,106 @@ class _ModeButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _EndRideDialog extends StatefulWidget {
+  const _EndRideDialog({
+    required this.duration,
+    required this.averagePower,
+    required this.defaultName,
+  });
+
+  final Duration duration;
+  final int? averagePower;
+  final String defaultName;
+
+  @override
+  State<_EndRideDialog> createState() => _EndRideDialogState();
+}
+
+class _EndRideDialogState extends State<_EndRideDialog> {
+  late final TextEditingController _nameController;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.defaultName);
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  String _formatDuration(Duration duration) {
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes.remainder(60);
+    final seconds = duration.inSeconds.remainder(60);
+
+    if (hours > 0) {
+      return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    }
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Sortie terminee'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Name input
+          TextField(
+            controller: _nameController,
+            decoration: const InputDecoration(
+              labelText: 'Nom de la session',
+              border: OutlineInputBorder(),
+            ),
+            autofocus: true,
+            textCapitalization: TextCapitalization.sentences,
+          ),
+          const SizedBox(height: 16),
+          // Stats
+          Row(
+            children: [
+              const Icon(Icons.timer, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Duree: ${_formatDuration(widget.duration)}',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          if (widget.averagePower != null) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(Icons.flash_on, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Puissance moy: ${widget.averagePower} W',
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, null),
+          child: const Text('Supprimer'),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.pop(context, _nameController.text),
+          child: const Text('Sauvegarder'),
+        ),
+      ],
     );
   }
 }
