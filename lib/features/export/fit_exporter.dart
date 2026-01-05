@@ -73,6 +73,10 @@ class FitExporter {
       _writeRecordMessage(dataBuffer, sample, session.startTime);
     }
 
+    // Write end event (must come before lap/session/activity)
+    final endTime = session.endTime ?? session.startTime.add(session.duration);
+    _writeEventMessage(dataBuffer, endTime, isStart: false);
+
     // Write lap message
     _writeLapMessage(dataBuffer, session);
 
@@ -81,10 +85,6 @@ class FitExporter {
 
     // Write activity message
     _writeActivityMessage(dataBuffer, session);
-
-    // Write end event
-    final endTime = session.endTime ?? session.startTime.add(session.duration);
-    _writeEventMessage(dataBuffer, endTime, isStart: false);
 
     final dataBytes = dataBuffer.toBytes();
 
@@ -107,28 +107,35 @@ class FitExporter {
   }
 
   static void _writeFileHeader(BytesBuilder buffer, int dataSize) {
+    // Build header bytes first (without CRC) to calculate CRC
+    final headerBytes = <int>[];
+
     // Header size (14 bytes for FIT 1.0)
-    buffer.addByte(14);
+    headerBytes.add(14);
 
     // Protocol version
-    buffer.addByte(_fitProtocolVersion);
+    headerBytes.add(_fitProtocolVersion);
 
     // Profile version (little endian)
-    buffer.addByte(_fitProfileVersion & 0xFF);
-    buffer.addByte((_fitProfileVersion >> 8) & 0xFF);
+    headerBytes.add(_fitProfileVersion & 0xFF);
+    headerBytes.add((_fitProfileVersion >> 8) & 0xFF);
 
     // Data size (little endian, 4 bytes)
-    buffer.addByte(dataSize & 0xFF);
-    buffer.addByte((dataSize >> 8) & 0xFF);
-    buffer.addByte((dataSize >> 16) & 0xFF);
-    buffer.addByte((dataSize >> 24) & 0xFF);
+    headerBytes.add(dataSize & 0xFF);
+    headerBytes.add((dataSize >> 8) & 0xFF);
+    headerBytes.add((dataSize >> 16) & 0xFF);
+    headerBytes.add((dataSize >> 24) & 0xFF);
 
     // File signature ".FIT"
-    buffer.add(_fitFileSignature.codeUnits);
+    headerBytes.addAll(_fitFileSignature.codeUnits);
 
-    // Header CRC (optional, set to 0x0000 for compatibility)
-    buffer.addByte(0);
-    buffer.addByte(0);
+    // Calculate header CRC (first 12 bytes only, excluding CRC itself)
+    final headerCrc = _calculateCrc(headerBytes);
+
+    // Write header with CRC
+    buffer.add(headerBytes);
+    buffer.addByte(headerCrc & 0xFF);
+    buffer.addByte((headerCrc >> 8) & 0xFF);
   }
 
   static void _writeFileIdMessage(BytesBuilder buffer, RideSession session) {
@@ -169,8 +176,8 @@ class FitExporter {
     // Definition message for record
     _writeDefinitionMessage(buffer, 2, _msgRecord, [
       _FieldDef(253, 4, 134), // timestamp: uint32
-      _FieldDef(3, 2, 132), // heart_rate: uint8 (expanded to uint16 for simplicity)
-      _FieldDef(4, 2, 132), // cadence: uint8
+      _FieldDef(3, 1, 2), // heart_rate: uint8
+      _FieldDef(4, 1, 2), // cadence: uint8
       _FieldDef(5, 4, 134), // distance: uint32 (scaled, 100 = 1m)
       _FieldDef(6, 2, 132), // speed: uint16 (scaled, 1000 = 1 m/s)
       _FieldDef(7, 2, 132), // power: uint16
@@ -180,15 +187,16 @@ class FitExporter {
     _writeDataHeader(buffer, 2);
     _writeTimestamp(buffer, sample.timestamp);
 
-    // Heart rate
-    final hr = sample.heartRate ?? 0;
-    _writeUint16(buffer, hr);
+    // Heart rate (uint8, clamped to 255)
+    final hr = (sample.heartRate ?? 0).clamp(0, 255);
+    buffer.addByte(hr);
 
-    // Cadence
-    _writeUint16(buffer, sample.cadence ?? 0);
+    // Cadence (uint8, clamped to 255)
+    final cadence = (sample.cadence ?? 0).clamp(0, 255);
+    buffer.addByte(cadence);
 
     // Distance in meters * 100
-    final distanceCm = ((sample.distance ?? 0) * 100);
+    final distanceCm = ((sample.distance ?? 0) * 100).round();
     _writeUint32(buffer, distanceCm);
 
     // Speed in m/s * 1000

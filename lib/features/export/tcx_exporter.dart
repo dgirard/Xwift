@@ -50,10 +50,14 @@ class TcxExporter {
     // XML header
     buffer.writeln('<?xml version="1.0" encoding="UTF-8"?>');
     buffer.writeln(
-        '<TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2" '
+        '<TrainingCenterDatabase '
+        'xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2" '
         'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
+        'xmlns:ax2="http://www.garmin.com/xmlschemas/ActivityExtension/v2" '
         'xsi:schemaLocation="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2 '
-        'http://www.garmin.com/xmlschemas/TrainingCenterDatabasev2.xsd">');
+        'https://www8.garmin.com/xmlschemas/TrainingCenterDatabasev2.xsd '
+        'http://www.garmin.com/xmlschemas/ActivityExtension/v2 '
+        'https://www8.garmin.com/xmlschemas/ActivityExtensionv2.xsd">');
 
     // Activities
     buffer.writeln('  <Activities>');
@@ -156,17 +160,19 @@ class TcxExporter {
       buffer.writeln('            <Cadence>$cadence</Cadence>');
     }
 
-    // Extensions for power
+    // Extensions for power and speed (always include for indoor rides)
     final power = sample.power ?? 0;
-    if (power > 0) {
+    final speed = sample.speed ?? 0;
+    if (power > 0 || speed > 0) {
       buffer.writeln('            <Extensions>');
-      buffer.writeln('              <ns3:TPX xmlns:ns3="http://www.garmin.com/xmlschemas/ActivityExtension/v2">');
-      buffer.writeln('                <ns3:Watts>$power</ns3:Watts>');
-      final speed = sample.speed ?? 0;
+      buffer.writeln('              <ax2:TPX>');
       if (speed > 0) {
-        buffer.writeln('                <ns3:Speed>${_formatDouble(speed / 3.6)}</ns3:Speed>'); // km/h to m/s
+        buffer.writeln('                <ax2:Speed>${_formatDouble(speed / 3.6)}</ax2:Speed>'); // km/h to m/s
       }
-      buffer.writeln('              </ns3:TPX>');
+      if (power > 0) {
+        buffer.writeln('                <ax2:Watts>$power</ax2:Watts>');
+      }
+      buffer.writeln('              </ax2:TPX>');
       buffer.writeln('            </Extensions>');
     }
 

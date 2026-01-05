@@ -6,6 +6,8 @@ import 'package:share_plus/share_plus.dart';
 
 import '../core/database/database_provider.dart';
 import '../core/theme/app_colors.dart';
+import '../features/export/fit_exporter.dart';
+import '../features/export/tcx_exporter.dart';
 
 class ExportScreen extends ConsumerWidget {
   const ExportScreen({super.key});
@@ -167,8 +169,8 @@ class ExportScreen extends ConsumerWidget {
                         final ride = rides[index];
                         return _RideTile(
                           ride: ride,
-                          onShareFit: () => _shareFile(context, ride, 'FIT'),
-                          onShareTcx: () => _shareFile(context, ride, 'TCX'),
+                          onShareFit: () => _shareFile(context, ref, ride, 'FIT'),
+                          onShareTcx: () => _shareFile(context, ref, ride, 'TCX'),
                           onDelete: () => _deleteRide(context, ref, ride),
                           onEditName: () => _editRideName(context, ref, ride),
                         );
@@ -285,26 +287,75 @@ class ExportScreen extends ConsumerWidget {
     );
   }
 
-  void _shareFile(BuildContext context, RideSummary ride, String format) {
-    // In real app, would get actual file path and export to FIT/TCX
-    final dateStr = DateFormat('dd MMM yyyy').format(ride.startTime);
-    final durationMin = ride.duration.inMinutes;
-    final power = ride.averagePower ?? 0;
-
-    Share.share(
-      '${ride.displayName}\n'
-      'Date: $dateStr\n'
-      'Duree: $durationMin min\n'
-      'Puissance moy: ${power}W',
-      subject: 'ride_${DateFormat('yyyyMMdd_HHmm').format(ride.startTime)}.$format',
-    );
-
+  Future<void> _shareFile(BuildContext context, WidgetRef ref, RideSummary ride, String format) async {
+    // Show loading indicator
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Partage du fichier $format...'),
+        content: Row(
+          children: [
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+            ),
+            const SizedBox(width: 12),
+            Text('Generation du fichier $format...'),
+          ],
+        ),
+        duration: const Duration(seconds: 10),
         behavior: SnackBarBehavior.floating,
       ),
     );
+
+    try {
+      // Load full ride session with samples
+      final session = await ref.read(rideRepositoryProvider).loadRideWithSamples(ride.id);
+      if (session == null) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Erreur: session introuvable'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+
+      // Generate file
+      final String filePath;
+      if (format == 'FIT') {
+        filePath = await FitExporter.export(session);
+      } else {
+        filePath = await TcxExporter.export(session);
+      }
+
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+      // Share the file
+      final result = await Share.shareXFiles(
+        [XFile(filePath)],
+        subject: 'ride_${DateFormat('yyyyMMdd_HHmm').format(ride.startTime)}.$format',
+      );
+
+      if (result.status == ShareResultStatus.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Fichier $format partage avec succes'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur: $e'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 }
 
