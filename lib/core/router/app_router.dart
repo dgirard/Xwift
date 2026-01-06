@@ -14,6 +14,13 @@ import '../../screens/hr_monitor_screen.dart';
 final appRouter = GoRouter(
   initialLocation: '/',
   debugLogDiagnostics: true,
+  // Redirect OAuth callbacks to profile - the deep link listener handles the token exchange
+  redirect: (context, state) {
+    if (state.uri.path == '/callback') {
+      return '/profile';
+    }
+    return null;
+  },
   routes: [
     GoRoute(
       path: '/',

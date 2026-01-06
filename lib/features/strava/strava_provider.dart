@@ -99,7 +99,8 @@ class StravaConnectionNotifier extends StateNotifier<StravaConnectionState> {
   void _listenForDeepLinks() {
     _appLinks.uriLinkStream.listen((uri) async {
       if (uri.scheme == StravaConfig.callbackScheme &&
-          uri.host == StravaConfig.callbackHost) {
+          uri.host == StravaConfig.callbackHost &&
+          uri.path.startsWith('/callback')) {
         await handleCallback(uri);
       }
     });

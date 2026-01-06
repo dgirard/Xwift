@@ -74,7 +74,8 @@ class StravaAuthService {
   Future<bool> handleCallback(Uri uri) async {
     // Check if this is our callback
     if (uri.scheme != StravaConfig.callbackScheme ||
-        uri.host != StravaConfig.callbackHost) {
+        uri.host != StravaConfig.callbackHost ||
+        !uri.path.startsWith('/callback')) {
       return false;
     }
 

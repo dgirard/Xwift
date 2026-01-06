@@ -16,10 +16,10 @@ class StravaConfig {
   static const String callbackScheme = 'xwift';
 
   /// OAuth callback host
-  static const String callbackHost = 'strava-callback';
+  static const String callbackHost = 'localhost';
 
-  /// Full callback URL
-  static const String callbackUrl = '$callbackScheme://$callbackHost';
+  /// Full callback URL - uses localhost which is whitelisted by Strava
+  static const String callbackUrl = '$callbackScheme://$callbackHost/callback';
 
   /// Required OAuth scopes for Xwift
   /// - activity:write: Upload activities

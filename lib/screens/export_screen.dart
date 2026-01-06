@@ -1,14 +1,24 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../core/database/database_provider.dart';
 import '../core/theme/app_colors.dart';
 import '../features/export/fit_exporter.dart';
 import '../features/export/tcx_exporter.dart';
+import '../features/illustration/gemini_image_service.dart';
+import '../features/illustration/illustration_config.dart';
+import '../features/illustration/illustration_prompt_builder.dart';
+import '../features/illustration/illustration_storage.dart';
+import '../features/illustration/illustration_viewer_screen.dart';
 import '../features/strava/strava_provider.dart';
 
 class ExportScreen extends ConsumerWidget {
@@ -122,6 +132,7 @@ class ExportScreen extends ConsumerWidget {
                           onUploadStrava: () => _uploadToStrava(context, ref, ride),
                           onDelete: () => _deleteRide(context, ref, ride),
                           onEditName: () => _editRideName(context, ref, ride),
+                          onIllustrate: () => _showIllustrationDialog(context, ref, ride),
                         );
                       },
                     ),
@@ -246,25 +257,38 @@ class ExportScreen extends ConsumerWidget {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
       if (uploadState.status == StravaUploadStatus.success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Activite envoyee vers Strava!'),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-            action: uploadState.activityId != null
-                ? SnackBarAction(
-                    label: 'Voir',
-                    textColor: Colors.white,
-                    onPressed: () {
-                      launchUrl(
-                        Uri.parse('https://www.strava.com/activities/${uploadState.activityId}'),
-                        mode: LaunchMode.externalApplication,
-                      );
-                    },
-                  )
-                : null,
-          ),
-        );
+        // Verifier si une illustration existe
+        final illustrationBytes = await IllustrationStorage.load(ride.id);
+
+        if (illustrationBytes != null && context.mounted) {
+          // Proposer de partager l'illustration
+          await _proposeShareIllustration(
+            context,
+            ride,
+            illustrationBytes,
+            uploadState.activityId,
+          );
+        } else if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Activite envoyee vers Strava!'),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              action: uploadState.activityId != null
+                  ? SnackBarAction(
+                      label: 'Voir',
+                      textColor: Colors.white,
+                      onPressed: () {
+                        launchUrl(
+                          Uri.parse('https://www.strava.com/activities/${uploadState.activityId}'),
+                          mode: LaunchMode.externalApplication,
+                        );
+                      },
+                    )
+                  : null,
+            ),
+          );
+        }
       } else if (uploadState.status == StravaUploadStatus.duplicate) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -288,6 +312,85 @@ class ExportScreen extends ConsumerWidget {
     }
 
     ref.read(stravaUploadProvider.notifier).reset();
+  }
+
+  /// Propose de partager l'illustration apres upload Strava
+  Future<void> _proposeShareIllustration(
+    BuildContext context,
+    RideSummary ride,
+    Uint8List illustrationBytes,
+    int? activityId,
+  ) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Activite envoyee!'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.memory(
+                illustrationBytes,
+                height: 150,
+                fit: BoxFit.contain,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Voulez-vous partager l\'illustration?\n'
+              'Vous pourrez l\'ajouter a votre activite Strava.',
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Non merci'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Partager'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true && context.mounted) {
+      // Partager l'illustration
+      final directory = await getTemporaryDirectory();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final file = File('${directory.path}/illustration_$timestamp.png');
+      await file.writeAsBytes(illustrationBytes);
+
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        subject: 'Illustration - ${ride.displayName}',
+        text: activityId != null
+            ? 'Mon illustration pour https://www.strava.com/activities/$activityId'
+            : 'Mon illustration pour ${ride.displayName}',
+      );
+    } else if (activityId != null && context.mounted) {
+      // Juste afficher le lien vers l'activite
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Activite envoyee vers Strava!'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(
+            label: 'Voir',
+            textColor: Colors.white,
+            onPressed: () {
+              launchUrl(
+                Uri.parse('https://www.strava.com/activities/$activityId'),
+                mode: LaunchMode.externalApplication,
+              );
+            },
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _shareFile(BuildContext context, WidgetRef ref, RideSummary ride, String format) async {
@@ -354,6 +457,269 @@ class ExportScreen extends ConsumerWidget {
           behavior: SnackBarBehavior.floating,
         ),
       );
+    }
+  }
+
+  /// Affiche le dialogue de configuration d'illustration
+  Future<void> _showIllustrationDialog(
+    BuildContext context,
+    WidgetRef ref,
+    RideSummary ride,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Verifier si l'API key Gemini est configuree
+    final apiKey = prefs.getString(IllustrationPrefsKeys.geminiApiKey);
+    if (apiKey == null || apiKey.isEmpty) {
+      final configured = await _showGeminiApiKeyDialog(context, prefs);
+      if (!configured) return;
+    }
+
+    // Charger les preferences
+    String selectedAnimal = prefs.getString(IllustrationPrefsKeys.animal) ?? 'hedgehog';
+    IllustrationStyle selectedStyle = IllustrationStyle.fromString(
+      prefs.getString(IllustrationPrefsKeys.style),
+    );
+    bool useBlackAndWhite = prefs.getBool(IllustrationPrefsKeys.blackAndWhite) ?? true;
+
+    if (!context.mounted) return;
+
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Generer une illustration'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Selection de l'animal
+                const Text('Personnage', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                ...illustrationAnimals.map((animal) => RadioListTile<String>(
+                  title: Text(animal['name']!),
+                  subtitle: Text(animal['desc']!, style: const TextStyle(fontSize: 12)),
+                  value: animal['id']!,
+                  groupValue: selectedAnimal,
+                  dense: true,
+                  onChanged: (v) => setDialogState(() => selectedAnimal = v!),
+                )),
+
+                const SizedBox(height: 16),
+
+                // Style visuel
+                const Text('Style', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                ...IllustrationStyle.values.map((style) => RadioListTile<IllustrationStyle>(
+                  title: Text(style.displayName),
+                  subtitle: Text(style.description, style: const TextStyle(fontSize: 12)),
+                  value: style,
+                  groupValue: selectedStyle,
+                  dense: true,
+                  onChanged: (v) => setDialogState(() {
+                    selectedStyle = v!;
+                    // Manga et Print sont souvent en N&B
+                    if (v == IllustrationStyle.manga || v == IllustrationStyle.print) {
+                      useBlackAndWhite = true;
+                    }
+                  }),
+                )),
+
+                const SizedBox(height: 8),
+
+                // Toggle couleur
+                SwitchListTile(
+                  title: const Text('Noir et blanc'),
+                  value: useBlackAndWhite,
+                  onChanged: (v) => setDialogState(() => useBlackAndWhite = v),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Annuler'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(ctx, {
+                  'animal': selectedAnimal,
+                  'style': selectedStyle,
+                  'blackAndWhite': useBlackAndWhite,
+                });
+              },
+              child: const Text('Generer'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result == null || !context.mounted) return;
+
+    // Sauvegarder les preferences (apres fermeture du dialogue)
+    await prefs.setString(IllustrationPrefsKeys.animal, result['animal'] as String);
+    await prefs.setString(IllustrationPrefsKeys.style, (result['style'] as IllustrationStyle).name);
+    await prefs.setBool(IllustrationPrefsKeys.blackAndWhite, result['blackAndWhite'] as bool);
+
+    // Generer l'illustration
+    await _generateIllustration(context, ref, ride, result);
+  }
+
+  /// Dialogue pour configurer la cle API Gemini
+  Future<bool> _showGeminiApiKeyDialog(BuildContext context, SharedPreferences prefs) async {
+    final controller = TextEditingController();
+
+    final apiKey = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Configuration Gemini'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Pour generer des illustrations, vous avez besoin d\'une cle API Google Gemini.\n\n'
+              '1. Allez sur aistudio.google.com\n'
+              '2. Creez une cle API\n'
+              '3. Collez-la ci-dessous',
+              style: TextStyle(fontSize: 12),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                labelText: 'Cle API Gemini',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+              obscureText: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: const Text('Enregistrer'),
+          ),
+        ],
+      ),
+    );
+
+    controller.dispose();
+
+    if (apiKey != null && apiKey.isNotEmpty) {
+      await prefs.setString(IllustrationPrefsKeys.geminiApiKey, apiKey);
+      return true;
+    }
+    return false;
+  }
+
+  /// Genere l'illustration avec Gemini
+  Future<void> _generateIllustration(
+    BuildContext context,
+    WidgetRef ref,
+    RideSummary ride,
+    Map<String, dynamic> config,
+  ) async {
+    // Show loading
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+            ),
+            const SizedBox(width: 12),
+            const Text('Generation de l\'illustration...'),
+          ],
+        ),
+        duration: const Duration(seconds: 90),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+
+    try {
+      // Charger la session complete
+      final session = await ref.read(rideRepositoryProvider).loadRideWithSamples(ride.id);
+      if (session == null) {
+        throw Exception('Session introuvable');
+      }
+
+      // Construire le prompt
+      final prompt = IllustrationPromptBuilder.build(
+        session: session,
+        animalId: config['animal'] as String,
+        style: config['style'] as IllustrationStyle,
+        blackAndWhite: config['blackAndWhite'] as bool,
+      );
+
+      print('[ILLUSTRATION] Prompt: $prompt');
+
+      // Generer l'image
+      final prefs = await SharedPreferences.getInstance();
+      final apiKey = prefs.getString(IllustrationPrefsKeys.geminiApiKey)!;
+      final service = GeminiImageService(apiKey: apiKey);
+      final imageBytes = await service.generateImage(prompt);
+
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+      if (imageBytes == null) {
+        throw Exception('Aucune image generee');
+      }
+
+      // Sauvegarder l'illustration associee au ride
+      await IllustrationStorage.save(ride.id, imageBytes);
+
+      // Sauvegarder aussi dans le dossier Download du telephone
+      final downloadPath = await IllustrationStorage.saveToDownloads(
+        ride.id,
+        imageBytes,
+        ride.displayName,
+      );
+
+      // Rafraichir la liste pour afficher la miniature
+      ref.invalidate(rideHistoryProvider);
+
+      // Afficher notification de sauvegarde
+      if (downloadPath != null && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Image sauvegardee dans Download'),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+
+      if (!context.mounted) return;
+
+      // Afficher le resultat avec viewer plein ecran
+      await showIllustrationViewer(
+        context,
+        imageBytes: imageBytes,
+        sessionName: ride.displayName,
+        onRegenerate: () => _showIllustrationDialog(context, ref, ride),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur: $e'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 }
@@ -545,7 +911,7 @@ class _StravaBanner extends ConsumerWidget {
   }
 }
 
-class _RideTile extends StatelessWidget {
+class _RideTile extends StatefulWidget {
   const _RideTile({
     required this.ride,
     required this.isStravaConnected,
@@ -554,6 +920,7 @@ class _RideTile extends StatelessWidget {
     required this.onUploadStrava,
     required this.onDelete,
     required this.onEditName,
+    required this.onIllustrate,
   });
 
   final RideSummary ride;
@@ -563,6 +930,47 @@ class _RideTile extends StatelessWidget {
   final VoidCallback onUploadStrava;
   final VoidCallback onDelete;
   final VoidCallback onEditName;
+  final VoidCallback onIllustrate;
+
+  @override
+  State<_RideTile> createState() => _RideTileState();
+}
+
+class _RideTileState extends State<_RideTile> {
+  Uint8List? _illustrationBytes;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadIllustration();
+  }
+
+  @override
+  void didUpdateWidget(_RideTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Toujours recharger l'illustration (peut avoir ete regeneree)
+    _loadIllustration();
+  }
+
+  Future<void> _loadIllustration() async {
+    final bytes = await IllustrationStorage.load(widget.ride.id);
+    if (mounted) {
+      setState(() {
+        _illustrationBytes = bytes;
+      });
+    }
+  }
+
+  void _openIllustrationViewer() {
+    if (_illustrationBytes != null) {
+      showIllustrationViewer(
+        context,
+        imageBytes: _illustrationBytes!,
+        sessionName: widget.ride.displayName,
+        onRegenerate: widget.onIllustrate,
+      );
+    }
+  }
 
   String _formatDuration(Duration duration) {
     final hours = duration.inHours;
@@ -575,7 +983,7 @@ class _RideTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateStr = DateFormat('dd MMM yyyy - HH:mm').format(ride.startTime);
+    final dateStr = DateFormat('dd MMM yyyy - HH:mm').format(widget.ride.startTime);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -590,14 +998,26 @@ class _RideTile extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceLight,
-                  borderRadius: BorderRadius.circular(8),
+              // Miniature illustration ou icone velo
+              GestureDetector(
+                onTap: _illustrationBytes != null ? _openIllustrationViewer : null,
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceLight,
+                    borderRadius: BorderRadius.circular(8),
+                    image: _illustrationBytes != null
+                        ? DecorationImage(
+                            image: MemoryImage(_illustrationBytes!),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                  ),
+                  child: _illustrationBytes == null
+                      ? Icon(Icons.directions_bike, color: AppColors.primary)
+                      : null,
                 ),
-                child: Icon(Icons.directions_bike, color: AppColors.primary),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -605,12 +1025,12 @@ class _RideTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     GestureDetector(
-                      onTap: onEditName,
+                      onTap: widget.onEditName,
                       child: Row(
                         children: [
                           Flexible(
                             child: Text(
-                              ride.displayName,
+                              widget.ride.displayName,
                               style: Theme.of(context).textTheme.titleSmall,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -630,7 +1050,7 @@ class _RideTile extends StatelessWidget {
               ),
               IconButton(
                 icon: Icon(Icons.delete_outline, color: AppColors.error),
-                onPressed: onDelete,
+                onPressed: widget.onDelete,
               ),
             ],
           ),
@@ -640,32 +1060,32 @@ class _RideTile extends StatelessWidget {
             children: [
               _StatChip(
                 icon: Icons.timer,
-                value: _formatDuration(ride.duration),
+                value: _formatDuration(widget.ride.duration),
               ),
               const SizedBox(width: 8),
-              if (ride.averagePower != null)
+              if (widget.ride.averagePower != null)
                 _StatChip(
                   icon: Icons.flash_on,
-                  value: '${ride.averagePower}W',
+                  value: '${widget.ride.averagePower}W',
                 ),
-              if (ride.averagePower != null) const SizedBox(width: 8),
-              if (ride.averageCadence != null)
+              if (widget.ride.averagePower != null) const SizedBox(width: 8),
+              if (widget.ride.averageCadence != null)
                 _StatChip(
                   icon: Icons.rotate_right,
-                  value: '${ride.averageCadence} rpm',
+                  value: '${widget.ride.averageCadence} rpm',
                 ),
             ],
           ),
           const SizedBox(height: 12),
           // Action buttons
-          if (isStravaConnected)
+          if (widget.isStravaConnected)
             Column(
               children: [
                 // Strava upload button (prominent)
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: onUploadStrava,
+                    onPressed: widget.onUploadStrava,
                     icon: const Icon(Icons.upload, size: 18),
                     label: const Text('Envoyer vers Strava'),
                     style: ElevatedButton.styleFrom(
@@ -681,7 +1101,7 @@ class _RideTile extends StatelessWidget {
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: onShareFit,
+                        onPressed: widget.onShareFit,
                         icon: const Icon(Icons.share, size: 16),
                         label: const Text('.FIT'),
                         style: OutlinedButton.styleFrom(
@@ -692,7 +1112,7 @@ class _RideTile extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: onShareTcx,
+                        onPressed: widget.onShareTcx,
                         icon: const Icon(Icons.share, size: 16),
                         label: const Text('.TCX'),
                         style: OutlinedButton.styleFrom(
@@ -702,27 +1122,57 @@ class _RideTile extends StatelessWidget {
                     ),
                   ],
                 ),
-              ],
-            )
-          else
-            Row(
-              children: [
-                Expanded(
+                const SizedBox(height: 8),
+                // Illustration button
+                SizedBox(
+                  width: double.infinity,
                   child: OutlinedButton.icon(
-                    onPressed: onShareFit,
-                    icon: const Icon(Icons.share, size: 16),
-                    label: const Text('.FIT'),
+                    onPressed: widget.onIllustrate,
+                    icon: Icon(Icons.auto_awesome, size: 16, color: AppColors.primary),
+                    label: const Text('Illustrer'),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
+              ],
+            )
+          else
+            Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: widget.onShareFit,
+                        icon: const Icon(Icons.share, size: 16),
+                        label: const Text('.FIT'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: widget.onShareTcx,
+                        icon: const Icon(Icons.share, size: 16),
+                        label: const Text('.TCX'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // Illustration button
+                SizedBox(
+                  width: double.infinity,
                   child: OutlinedButton.icon(
-                    onPressed: onShareTcx,
-                    icon: const Icon(Icons.share, size: 16),
-                    label: const Text('.TCX'),
+                    onPressed: widget.onIllustrate,
+                    icon: Icon(Icons.auto_awesome, size: 16, color: AppColors.primary),
+                    label: const Text('Illustrer'),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                     ),
