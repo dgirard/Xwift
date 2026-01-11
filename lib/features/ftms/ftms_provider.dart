@@ -77,6 +77,9 @@ class FtmsControlNotifier extends StateNotifier<FtmsControlState> {
   BluetoothCharacteristic? _controlPoint;
   BluetoothCharacteristic? _indoorBikeData;
   BluetoothCharacteristic? _machineStatus;
+  BluetoothCharacteristic? _fitnessMachineFeature;
+  BluetoothCharacteristic? _supportedResistanceRange;
+  BluetoothCharacteristic? _supportedPowerRange;
 
   StreamSubscription<List<int>>? _controlPointSubscription;
   StreamSubscription<List<int>>? _telemetrySubscription;
@@ -91,31 +94,173 @@ class FtmsControlNotifier extends StateNotifier<FtmsControlState> {
   Completer<FtmsResponse>? _currentCommandCompleter;
 
   Future<void> _init() async {
-    if (!_connectionState.isConnected) return;
+    print('[FTMS] _init() called, isConnected: ${_connectionState.isConnected}');
+    if (!_connectionState.isConnected) {
+      print('[FTMS] Not connected, skipping init');
+      return;
+    }
 
     try {
       final services = _ref.read(bleConnectionProvider.notifier).services;
-      if (services == null) return;
+      if (services == null) {
+        print('[FTMS] No services found');
+        return;
+      }
 
+      print('[FTMS] Looking for FTMS service (${FtmsConstants.serviceUuid})...');
       final ftmsService = services.firstWhere(
         (s) => s.uuid == FtmsConstants.serviceUuid,
+        orElse: () => throw Exception('FTMS service not found'),
       );
+      print('[FTMS] Found FTMS service');
 
       // Get characteristics
+      print('[FTMS] Scanning ${ftmsService.characteristics.length} characteristics...');
       for (final char in ftmsService.characteristics) {
         if (char.uuid == FtmsConstants.controlPoint) {
           _controlPoint = char;
+          print('[FTMS] Found Control Point characteristic');
         } else if (char.uuid == FtmsConstants.indoorBikeData) {
           _indoorBikeData = char;
+          print('[FTMS] Found Indoor Bike Data characteristic');
         } else if (char.uuid == FtmsConstants.machineStatus) {
           _machineStatus = char;
+          print('[FTMS] Found Machine Status characteristic');
+        } else if (char.uuid == FtmsConstants.fitnessMachineFeature) {
+          _fitnessMachineFeature = char;
+          print('[FTMS] Found Fitness Machine Feature characteristic');
+        } else if (char.uuid == FtmsConstants.supportedResistanceRange) {
+          _supportedResistanceRange = char;
+          print('[FTMS] Found Supported Resistance Range characteristic');
+        } else if (char.uuid == FtmsConstants.supportedPowerRange) {
+          _supportedPowerRange = char;
+          print('[FTMS] Found Supported Power Range characteristic');
         }
       }
 
+      if (_controlPoint == null) {
+        print('[FTMS] WARNING: Control Point characteristic NOT found!');
+      }
+
+      // Read device features
+      await _readDeviceFeatures();
+
       // Enable notifications
       await _enableNotifications();
+      print('[FTMS] Notifications enabled');
     } catch (e) {
+      print('[FTMS] Error initializing: $e');
       state = state.copyWith(error: 'Failed to initialize FTMS: $e');
+    }
+  }
+
+  /// Read device features from Fitness Machine Feature characteristic
+  Future<void> _readDeviceFeatures() async {
+    if (_fitnessMachineFeature != null) {
+      try {
+        final value = await _fitnessMachineFeature!.read();
+        print('[FTMS] Fitness Machine Feature raw: ${value.map((b) => '0x${b.toRadixString(16).padLeft(2, '0')}').join(' ')}');
+
+        if (value.length >= 8) {
+          // First 4 bytes: Fitness Machine Features
+          final featureFlags = value[0] | (value[1] << 8) | (value[2] << 16) | (value[3] << 24);
+          // Next 4 bytes: Target Setting Features
+          final targetFlags = value[4] | (value[5] << 8) | (value[6] << 16) | (value[7] << 24);
+
+          print('[FTMS] Feature Flags: 0x${featureFlags.toRadixString(16).padLeft(8, '0')}');
+          print('[FTMS] Target Flags: 0x${targetFlags.toRadixString(16).padLeft(8, '0')}');
+
+          // Parse Feature Flags (bits 0-17)
+          print('[FTMS] --- SUPPORTED FEATURES ---');
+          if (featureFlags & 0x0001 != 0) print('[FTMS]   - Average Speed');
+          if (featureFlags & 0x0002 != 0) print('[FTMS]   - Cadence');
+          if (featureFlags & 0x0004 != 0) print('[FTMS]   - Total Distance');
+          if (featureFlags & 0x0008 != 0) print('[FTMS]   - Inclination');
+          if (featureFlags & 0x0010 != 0) print('[FTMS]   - Elevation Gain');
+          if (featureFlags & 0x0020 != 0) print('[FTMS]   - Pace');
+          if (featureFlags & 0x0040 != 0) print('[FTMS]   - Step Count');
+          if (featureFlags & 0x0080 != 0) print('[FTMS]   - Resistance Level');
+          if (featureFlags & 0x0100 != 0) print('[FTMS]   - Stride Count');
+          if (featureFlags & 0x0200 != 0) print('[FTMS]   - Expended Energy');
+          if (featureFlags & 0x0400 != 0) print('[FTMS]   - Heart Rate');
+          if (featureFlags & 0x0800 != 0) print('[FTMS]   - Metabolic Equivalent');
+          if (featureFlags & 0x1000 != 0) print('[FTMS]   - Elapsed Time');
+          if (featureFlags & 0x2000 != 0) print('[FTMS]   - Remaining Time');
+          if (featureFlags & 0x4000 != 0) print('[FTMS]   - Power Measurement');
+          if (featureFlags & 0x8000 != 0) print('[FTMS]   - Force on Belt');
+          if (featureFlags & 0x10000 != 0) print('[FTMS]   - Power Output');
+
+          // Parse Target Setting Features (bits 0-13)
+          print('[FTMS] --- TARGET SETTINGS SUPPORTED ---');
+          if (targetFlags & 0x0001 != 0) print('[FTMS]   - Speed Target');
+          if (targetFlags & 0x0002 != 0) print('[FTMS]   - Inclination Target');
+          if (targetFlags & 0x0004 != 0) print('[FTMS]   - Resistance Target');
+          if (targetFlags & 0x0008 != 0) print('[FTMS]   - Power Target');
+          if (targetFlags & 0x0010 != 0) print('[FTMS]   - Heart Rate Target');
+          if (targetFlags & 0x0020 != 0) print('[FTMS]   - Targeted Expended Energy');
+          if (targetFlags & 0x0040 != 0) print('[FTMS]   - Targeted Step Number');
+          if (targetFlags & 0x0080 != 0) print('[FTMS]   - Targeted Stride Number');
+          if (targetFlags & 0x0100 != 0) print('[FTMS]   - Targeted Distance');
+          if (targetFlags & 0x0200 != 0) print('[FTMS]   - Targeted Training Time');
+          if (targetFlags & 0x0400 != 0) print('[FTMS]   - Targeted Time in 2 HR Zones');
+          if (targetFlags & 0x0800 != 0) print('[FTMS]   - Targeted Time in 3 HR Zones');
+          if (targetFlags & 0x1000 != 0) print('[FTMS]   - Targeted Time in 5 HR Zones');
+          if (targetFlags & 0x2000 != 0) print('[FTMS]   - Indoor Bike Simulation');
+          if (targetFlags & 0x4000 != 0) print('[FTMS]   - Wheel Circumference');
+          if (targetFlags & 0x8000 != 0) print('[FTMS]   - Spin Down Control');
+          if (targetFlags & 0x10000 != 0) print('[FTMS]   - Targeted Cadence');
+
+          // Critical features for grade/resistance control
+          final supportsResistanceTarget = (targetFlags & 0x0004) != 0;
+          final supportsInclinationTarget = (targetFlags & 0x0002) != 0;
+          final supportsSimulation = (targetFlags & 0x2000) != 0;
+          final supportsPowerTarget = (targetFlags & 0x0008) != 0;
+
+          print('[FTMS] === SUMMARY ===');
+          print('[FTMS] Resistance Target: ${supportsResistanceTarget ? 'YES' : 'NO'}');
+          print('[FTMS] Inclination Target: ${supportsInclinationTarget ? 'YES' : 'NO'}');
+          print('[FTMS] Indoor Bike Simulation: ${supportsSimulation ? 'YES' : 'NO'}');
+          print('[FTMS] Power Target (ERG): ${supportsPowerTarget ? 'YES' : 'NO'}');
+        }
+      } catch (e) {
+        print('[FTMS] Error reading features: $e');
+      }
+    } else {
+      print('[FTMS] Fitness Machine Feature characteristic not available');
+    }
+
+    // Read resistance range if available
+    if (_supportedResistanceRange != null) {
+      try {
+        final value = await _supportedResistanceRange!.read();
+        print('[FTMS] Resistance Range raw: ${value.map((b) => '0x${b.toRadixString(16).padLeft(2, '0')}').join(' ')}');
+        if (value.length >= 6) {
+          final data = ByteData.view(Uint8List.fromList(value).buffer);
+          final minRes = data.getInt16(0, Endian.little) * 0.1;
+          final maxRes = data.getInt16(2, Endian.little) * 0.1;
+          final incRes = data.getUint16(4, Endian.little) * 0.1;
+          print('[FTMS] Resistance Range: $minRes to $maxRes (increment: $incRes)');
+        }
+      } catch (e) {
+        print('[FTMS] Error reading resistance range: $e');
+      }
+    }
+
+    // Read power range if available
+    if (_supportedPowerRange != null) {
+      try {
+        final value = await _supportedPowerRange!.read();
+        print('[FTMS] Power Range raw: ${value.map((b) => '0x${b.toRadixString(16).padLeft(2, '0')}').join(' ')}');
+        if (value.length >= 6) {
+          final data = ByteData.view(Uint8List.fromList(value).buffer);
+          final minPower = data.getInt16(0, Endian.little);
+          final maxPower = data.getInt16(2, Endian.little);
+          final incPower = data.getUint16(4, Endian.little);
+          print('[FTMS] Power Range: ${minPower}W to ${maxPower}W (increment: ${incPower}W)');
+        }
+      } catch (e) {
+        print('[FTMS] Error reading power range: $e');
+      }
     }
   }
 
@@ -146,21 +291,29 @@ class FtmsControlNotifier extends StateNotifier<FtmsControlState> {
   }
 
   void _handleControlPointResponse(List<int> value) {
-    if (value.length < 3) return;
+    print('[FTMS] Control Point response: ${value.map((b) => '0x${b.toRadixString(16).padLeft(2, '0')}').join(' ')}');
+    if (value.length < 3) {
+      print('[FTMS] Response too short (${value.length} bytes)');
+      return;
+    }
 
     final responseCode = value[0];
     final requestOpCode = value[1];
     final resultCode = value[2];
 
     if (responseCode == FtmsConstants.opCodeResponseCode) {
+      final isSuccess = resultCode == FtmsConstants.resultSuccess;
+      print('[FTMS] Response for opCode 0x${requestOpCode.toRadixString(16)}: ${isSuccess ? 'SUCCESS' : 'FAILED (code: $resultCode)'}');
+
       final response = FtmsResponse(
         requestOpCode: requestOpCode,
         resultCode: resultCode,
-        isSuccess: resultCode == FtmsConstants.resultSuccess,
+        isSuccess: isSuccess,
       );
 
       _currentCommandCompleter?.complete(response);
       _currentCommandCompleter = null;
+      _isProcessingCommand = false;
       _processNextCommand();
     }
   }
@@ -278,9 +431,13 @@ class FtmsControlNotifier extends StateNotifier<FtmsControlState> {
 
   /// Request control of the fitness machine
   Future<bool> requestControl() async {
+    print('[FTMS] requestControl() called');
     final response = await _sendCommand([FtmsConstants.opCodeRequestControl]);
+    print('[FTMS] requestControl() response: ${response.isSuccess ? 'SUCCESS' : 'FAILED (code: ${response.resultCode})'}');
     if (response.isSuccess) {
       state = state.copyWith(hasControl: true);
+    } else {
+      print('[FTMS] WARNING: Failed to acquire control!');
     }
     return response.isSuccess;
   }
@@ -321,6 +478,16 @@ class FtmsControlNotifier extends StateNotifier<FtmsControlState> {
 
   /// Set target resistance level (0-100)
   Future<bool> setResistance(double level) async {
+    print('[FTMS] setResistance($level) called, hasControl: ${state.hasControl}');
+    if (!state.hasControl) {
+      print('[FTMS] No control, requesting control first...');
+      final acquired = await requestControl();
+      if (!acquired) {
+        print('[FTMS] Failed to acquire control, cannot set resistance');
+        return false;
+      }
+    }
+
     // Convert to SINT16 with 0.1 resolution
     final value = (level * 10).round().clamp(-32768, 32767);
     final bytes = [
@@ -330,6 +497,7 @@ class FtmsControlNotifier extends StateNotifier<FtmsControlState> {
     ];
 
     final response = await _sendCommand(bytes);
+    print('[FTMS] setResistance() result: ${response.isSuccess ? 'SUCCESS' : 'FAILED'}');
     if (response.isSuccess) {
       state = state.copyWith(currentResistance: level);
     }
@@ -390,7 +558,18 @@ class FtmsControlNotifier extends StateNotifier<FtmsControlState> {
 
   /// Set grade (convenience method for SIM mode)
   Future<bool> setGrade(double grade) async {
-    return setSimulationParams(grade: grade);
+    print('[FTMS] setGrade($grade) called, hasControl: ${state.hasControl}');
+    if (!state.hasControl) {
+      print('[FTMS] No control, requesting control first...');
+      final acquired = await requestControl();
+      if (!acquired) {
+        print('[FTMS] Failed to acquire control, cannot set grade');
+        return false;
+      }
+    }
+    final result = await setSimulationParams(grade: grade);
+    print('[FTMS] setGrade() result: ${result ? 'SUCCESS' : 'FAILED'}');
+    return result;
   }
 
   /// Reset the fitness machine
@@ -412,6 +591,7 @@ class FtmsControlNotifier extends StateNotifier<FtmsControlState> {
   void _processNextCommand() {
     if (_isProcessingCommand || _commandQueue.isEmpty) return;
     if (_controlPoint == null) {
+      print('[FTMS] ERROR: Control Point is NULL - cannot send commands!');
       // Complete all pending commands with error
       for (final cmd in _commandQueue) {
         cmd.completer.complete(const FtmsResponse(
@@ -428,11 +608,16 @@ class FtmsControlNotifier extends StateNotifier<FtmsControlState> {
     final command = _commandQueue.removeAt(0);
     _currentCommandCompleter = command.completer;
 
+    final cmdHex = command.bytes.map((b) => '0x${b.toRadixString(16).padLeft(2, '0')}').join(' ');
+    print('[FTMS] Sending command: $cmdHex');
+
     _controlPoint!.write(command.bytes, withoutResponse: false).then((_) {
+      print('[FTMS] Command written, waiting for response...');
       // Wait for indication response (handled in _handleControlPointResponse)
       // Timeout after 5 seconds
       Future.delayed(const Duration(seconds: 5), () {
         if (_currentCommandCompleter == command.completer) {
+          print('[FTMS] Command TIMEOUT after 5 seconds');
           command.completer.complete(const FtmsResponse(
             requestOpCode: 0,
             resultCode: FtmsConstants.resultOperationFailed,
@@ -444,6 +629,7 @@ class FtmsControlNotifier extends StateNotifier<FtmsControlState> {
         }
       });
     }).catchError((e) {
+      print('[FTMS] Command write ERROR: $e');
       command.completer.complete(const FtmsResponse(
         requestOpCode: 0,
         resultCode: FtmsConstants.resultOperationFailed,

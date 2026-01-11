@@ -26,7 +26,7 @@ class DashboardScreen extends ConsumerStatefulWidget {
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   RideMode _currentMode = RideMode.sim;
   double _currentGrade = 0.0; // Pente en pourcentage (-10% à +10%)
-  double _resistanceLevel = 50;
+  double _resistanceLevel = 2.5; // 0-5 range
   bool _isRiding = false;      // En train de pédaler (timer actif)
   bool _rideStarted = false;   // Sortie démarrée (même si en pause)
 
@@ -132,6 +132,37 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       body: SafeArea(
         child: Column(
           children: [
+            // Warning banner if no control
+            if (!ftmsState.hasControl)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                color: Colors.orange.shade100,
+                child: Row(
+                  children: [
+                    Icon(Icons.warning_amber, color: Colors.orange.shade800, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Pas de controle FTMS - les commandes ne fonctionneront pas',
+                        style: TextStyle(color: Colors.orange.shade900, fontSize: 12),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        final success = await ref.read(ftmsControlProvider.notifier).requestControl();
+                        if (!success && context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Echec acquisition controle')),
+                          );
+                        }
+                      },
+                      child: const Text('Reessayer'),
+                    ),
+                  ],
+                ),
+              ),
+
             // Mode toggle + Timer
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -267,7 +298,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     ),
                     const Spacer(),
                     Text(
-                      '${_resistanceLevel.round()}%',
+                      '${_resistanceLevel.toStringAsFixed(1)}',
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                             color: AppColors.primary,
                           ),
@@ -278,7 +309,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               Slider(
                 value: _resistanceLevel,
                 min: 0,
-                max: 100,
+                max: 5,
+                divisions: 50, // 0.1 increments
                 onChanged: (value) {
                   setState(() => _resistanceLevel = value);
                 },
