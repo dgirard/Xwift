@@ -3,8 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../screens/welcome_screen.dart';
 import '../../screens/device_connection_screen.dart';
-import '../../screens/dashboard_screen.dart';
-import '../../screens/erg_mode_screen.dart';
+import '../../screens/ride_screen.dart';
 import '../../screens/profile_screen.dart';
 import '../../screens/export_screen.dart';
 import '../../screens/workouts_screen.dart';
@@ -30,19 +29,14 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/connect',
       name: 'connect',
-      builder: (context, state) => const DeviceConnectionScreen(),
+      builder: (context, state) => DeviceConnectionScreen(
+        continueToRide: state.uri.queryParameters['next'] == 'ride',
+      ),
     ),
     GoRoute(
       path: '/ride',
       name: 'ride',
-      builder: (context, state) => const DashboardScreen(),
-      routes: [
-        GoRoute(
-          path: 'erg',
-          name: 'erg',
-          builder: (context, state) => const ErgModeScreen(),
-        ),
-      ],
+      builder: (context, state) => const RideScreen(),
     ),
     GoRoute(
       path: '/profile',

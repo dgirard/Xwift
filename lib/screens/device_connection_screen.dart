@@ -1,13 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../core/theme/app_colors.dart';
 import '../features/bluetooth/ble_provider.dart';
+import '../features/settings/user_settings_provider.dart';
 import '../models/ftms_device.dart';
 
+/// Finds and connects the trainer. Opened with `?next=ride` it continues to
+/// the ride screen; otherwise it returns where it was opened from.
 class DeviceConnectionScreen extends ConsumerStatefulWidget {
-  const DeviceConnectionScreen({super.key});
+  const DeviceConnectionScreen({super.key, this.continueToRide = false});
+
+  final bool continueToRide;
 
   @override
   ConsumerState<DeviceConnectionScreen> createState() =>
@@ -16,454 +23,480 @@ class DeviceConnectionScreen extends ConsumerStatefulWidget {
 
 class _DeviceConnectionScreenState
     extends ConsumerState<DeviceConnectionScreen> {
+  String? _connectingId;
+  late final BleScannerNotifier _scanner;
+
   @override
   void initState() {
     super.initState();
-    // Start scanning when screen opens
+    _scanner = ref.read(bleScannerProvider.notifier);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(bleScannerProvider.notifier).startScan();
+      if (mounted) _scanner.startScan();
     });
   }
 
   @override
-  Widget build(BuildContext context) {
-    final scanState = ref.watch(bleScannerProvider);
-    final connectionState = ref.watch(bleConnectionProvider);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Connexion Appareil'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.help_outline),
-            onPressed: () {
-              // Show help dialog
-              _showHelpDialog(context);
-            },
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Scan animation area
-          Container(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              children: [
-                _ScanAnimation(isScanning: scanState.isScanning),
-                const SizedBox(height: 24),
-                Text(
-                  scanState.isScanning
-                      ? 'Recherche d\'appareils...'
-                      : 'Recherche terminee',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Assurez-vous que votre Zwift Ride est\nallume et pret a etre couple.',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-            ),
-          ),
-
-          // Error message
-          if (scanState.error != null)
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.error.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.error.withOpacity(0.3)),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.error_outline, color: AppColors.error, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      scanState.error!,
-                      style: TextStyle(color: AppColors.error, fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-          const SizedBox(height: 16),
-
-          // Devices list header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Text(
-                  'APPAREILS DETECTES',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        letterSpacing: 1.2,
-                      ),
-                ),
-                const Spacer(),
-                if (scanState.devices.isNotEmpty)
-                  Text(
-                    '${scanState.devices.length}',
-                    style: Theme.of(context).textTheme.labelSmall,
-                  ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          // Devices list
-          Expanded(
-            child: scanState.devices.isEmpty
-                ? Center(
-                    child: scanState.isScanning
-                        ? const CircularProgressIndicator()
-                        : Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.bluetooth_disabled,
-                                size: 48,
-                                color: AppColors.textSecondary,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Aucun appareil trouve',
-                                style:
-                                    Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                          color: AppColors.textSecondary,
-                                        ),
-                              ),
-                            ],
-                          ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: scanState.devices.length,
-                    itemBuilder: (context, index) {
-                      final device = scanState.devices[index];
-                      final isConnecting =
-                          connectionState.status == ConnectionStatus.connecting &&
-                              connectionState.connectedDevice?.id == device.id;
-                      final isConnected =
-                          connectionState.status == ConnectionStatus.ready &&
-                              connectionState.connectedDevice?.id == device.id;
-
-                      return _DeviceListTile(
-                        device: device,
-                        isConnecting: isConnecting,
-                        isConnected: isConnected,
-                        onConnect: () => _connectToDevice(device),
-                      );
-                    },
-                  ),
-          ),
-
-          // Troubleshooting link
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextButton.icon(
-              onPressed: () => _showHelpDialog(context),
-              icon: Icon(Icons.open_in_new, size: 16, color: AppColors.primary),
-              label: Text(
-                'Problemes de connexion ?',
-                style: TextStyle(color: AppColors.primary),
-              ),
-            ),
-          ),
-
-          // Scan again button
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-            child: SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: scanState.isScanning
-                    ? null
-                    : () => ref.read(bleScannerProvider.notifier).startScan(),
-                icon: Icon(
-                  scanState.isScanning ? Icons.hourglass_empty : Icons.refresh,
-                ),
-                label: Text(
-                  scanState.isScanning ? 'Recherche en cours...' : 'Scanner a nouveau',
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+  void dispose() {
+    _scanner.stopScan();
+    super.dispose();
   }
 
-  Future<void> _connectToDevice(FtmsDevice device) async {
-    await ref.read(bleConnectionProvider.notifier).connect(device);
+  Future<void> _connect(FtmsDevice device) async {
+    setState(() => _connectingId = device.id);
+    await _scanner.stopScan();
+    final ok = await ref.read(bleConnectionProvider.notifier).connect(device);
+    if (!mounted) return;
+    setState(() => _connectingId = null);
+    if (ok) _continue();
+  }
 
-    final state = ref.read(bleConnectionProvider);
-    if (state.status == ConnectionStatus.ready && mounted) {
+  /// Goes on to riding, or back to the previous screen.
+  void _continue() {
+    if (widget.continueToRide) {
+      context.pushReplacement('/ride');
+    } else if (context.canPop()) {
+      context.pop();
+    } else {
       context.go('/ride');
     }
   }
 
-  void _showHelpDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Aide a la connexion'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _HelpItem(
-              number: '1',
-              text: 'Verifiez que le Bluetooth est active sur votre telephone',
-            ),
-            _HelpItem(
-              number: '2',
-              text: 'Assurez-vous que votre trainer est allume',
-            ),
-            _HelpItem(
-              number: '3',
-              text: 'Fermez les autres applications utilisant le Bluetooth',
-            ),
-            _HelpItem(
-              number: '4',
-              text: 'Rapprochez-vous de votre trainer',
-            ),
+  void _back() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scan = ref.watch(bleScannerProvider);
+    final connection = ref.watch(bleConnectionProvider);
+    final settings = ref.watch(userSettingsProvider).valueOrNull;
+    final lastId = settings?.lastDeviceId;
+
+    // Last used trainer first, then by signal strength.
+    final devices = [...scan.devices]..sort((a, b) {
+        if (a.id == lastId) return -1;
+        if (b.id == lastId) return 1;
+        return b.rssi.compareTo(a.rssi);
+      });
+
+    final failedDevice = connection.status == ConnectionStatus.error
+        ? connection.connectedDevice
+        : null;
+
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          tooltip: 'Retour',
+          icon: const Icon(Icons.arrow_back),
+          onPressed: _back,
+        ),
+        title: const Text('Home trainer'),
+        actions: [
+          IconButton(
+            tooltip: 'Aide',
+            icon: const Icon(Icons.help_outline),
+            onPressed: () => _showHelp(context),
+          ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        children: [
+          _Steps(scanning: scan.isScanning),
+          const SizedBox(height: 16),
+          if (scan.issue != ScanIssue.none) ...[
+            _IssueCard(issue: scan.issue, error: scan.error),
+            const SizedBox(height: 16),
           ],
+          if (failedDevice != null && _connectingId == null) ...[
+            _MessageCard(
+              icon: Icons.error_outline,
+              color: AppColors.error,
+              title: 'Connexion à ${failedDevice.name} impossible',
+              text: connection.error ?? '',
+              actionLabel: 'Réessayer',
+              onAction: () => _connect(failedDevice),
+            ),
+            const SizedBox(height: 16),
+          ],
+          Row(
+            children: [
+              Text('HOME TRAINERS À PROXIMITÉ',
+                  style: theme.textTheme.labelSmall),
+              const SizedBox(width: 8),
+              if (scan.isScanning)
+                const SizedBox(
+                  width: 12,
+                  height: 12,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              const Spacer(),
+              if (!scan.isScanning && scan.issue == ScanIssue.none)
+                TextButton.icon(
+                  onPressed: () =>
+                      ref.read(bleScannerProvider.notifier).startScan(),
+                  icon: const Icon(Icons.refresh, size: 18),
+                  label: const Text('Rechercher'),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          for (final device in devices) ...[
+            _DeviceTile(
+              device: device,
+              lastUsed: device.id == lastId,
+              connecting: _connectingId == device.id,
+              connected: connection.isReady &&
+                  connection.connectedDevice?.id == device.id,
+              enabled: _connectingId == null,
+              onTap: () => _connect(device),
+            ),
+            const SizedBox(height: 8),
+          ],
+          if (devices.isEmpty && scan.isScanning)
+            _MessageCard(
+              icon: Icons.bluetooth_searching,
+              color: AppColors.primary,
+              title: 'Recherche en cours…',
+              text:
+                  'Pédalez quelques tours : la plupart des home trainers ne se '
+                  'signalent que lorsqu\'ils sont réveillés.',
+            ),
+          if (devices.isEmpty &&
+              !scan.isScanning &&
+              scan.hasScanned &&
+              scan.issue == ScanIssue.none)
+            _MessageCard(
+              icon: Icons.search_off,
+              color: AppColors.warning,
+              title: 'Aucun home trainer trouvé',
+              text: '• Le home trainer est-il branché et allumé ?\n'
+                  '• Pédalez quelques tours pour le réveiller.\n'
+                  '• Fermez Zwift ou toute autre app qui y est connectée.\n'
+                  '• Rapprochez le téléphone du home trainer.',
+              actionLabel: 'Relancer la recherche',
+              onAction: () => ref.read(bleScannerProvider.notifier).startScan(),
+            ),
+        ],
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              OutlinedButton(
+                onPressed: _continue,
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(52),
+                ),
+                child: Text(
+                  connection.isReady
+                      ? 'Continuer'
+                      : 'Continuer sans home trainer',
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Vous pourrez le connecter plus tard depuis l\'écran de sortie.',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showHelp(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Aide à la connexion'),
+        content: const Text(
+          'Xwift se connecte aux home trainers compatibles Bluetooth FTMS '
+          '(Zwift Hub et Zwift Ride, Wahoo KICKR, Tacx, Elite…).\n\n'
+          '1. Allumez le home trainer et pédalez quelques tours.\n'
+          '2. Activez le Bluetooth du téléphone.\n'
+          '3. Fermez les autres applications connectées au home trainer : '
+          'un home trainer n\'accepte qu\'un seul pilote à la fois.\n'
+          '4. Touchez son nom dans la liste.\n\n'
+          'Xwift se souvient du dernier home trainer et s\'y reconnecte '
+          'tout seul à l\'ouverture de l\'écran de sortie.',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Compris'),
-          ),
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Compris')),
         ],
       ),
     );
   }
 }
 
-class _ScanAnimation extends StatefulWidget {
-  const _ScanAnimation({required this.isScanning});
+/// The three steps, so that the rider knows what to do.
+class _Steps extends StatelessWidget {
+  const _Steps({required this.scanning});
 
-  final bool isScanning;
-
-  @override
-  State<_ScanAnimation> createState() => _ScanAnimationState();
-}
-
-class _ScanAnimationState extends State<_ScanAnimation>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(seconds: 2),
-      vsync: this,
-    );
-    if (widget.isScanning) {
-      _controller.repeat();
-    }
-  }
-
-  @override
-  void didUpdateWidget(_ScanAnimation oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.isScanning && !_controller.isAnimating) {
-      _controller.repeat();
-    } else if (!widget.isScanning && _controller.isAnimating) {
-      _controller.stop();
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  final bool scanning;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 100,
-      height: 100,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          if (widget.isScanning)
-            AnimatedBuilder(
-              animation: _controller,
-              builder: (context, child) {
-                return Container(
-                  width: 100 * _controller.value,
-                  height: 100 * _controller.value,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppColors.primary.withOpacity(1 - _controller.value),
-                      width: 2,
-                    ),
-                  ),
-                );
-              },
-            ),
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.surfaceBorder),
-            ),
-            child: Icon(
-              Icons.bluetooth,
-              color: widget.isScanning ? AppColors.primary : AppColors.textSecondary,
-              size: 28,
-            ),
+    final theme = Theme.of(context);
+    Widget step(String number, String text) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 3),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 11,
+                backgroundColor: AppColors.primary.withValues(alpha: 0.2),
+                child: Text(number,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: AppColors.primaryLight,
+                    )),
+              ),
+              const SizedBox(width: 10),
+              Expanded(child: Text(text, style: theme.textTheme.bodyMedium)),
+            ],
           ),
-        ],
-      ),
+        );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        step('1', 'Allumez le home trainer et pédalez quelques tours.'),
+        step('2', 'Touchez son nom dans la liste ci-dessous.'),
+        step('3',
+            'C\'est tout : Xwift s\'y reconnectera tout seul la prochaine fois.'),
+      ],
     );
   }
 }
 
-class _DeviceListTile extends StatelessWidget {
-  const _DeviceListTile({
+class _DeviceTile extends StatelessWidget {
+  const _DeviceTile({
     required this.device,
-    required this.isConnecting,
-    required this.isConnected,
-    required this.onConnect,
+    required this.lastUsed,
+    required this.connecting,
+    required this.connected,
+    required this.enabled,
+    required this.onTap,
   });
 
   final FtmsDevice device;
-  final bool isConnecting;
-  final bool isConnected;
-  final VoidCallback onConnect;
+  final bool lastUsed;
+  final bool connecting;
+  final bool connected;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  int get _bars => device.rssi >= -60
+      ? 3
+      : device.rssi >= -78
+          ? 2
+          : 1;
 
   @override
   Widget build(BuildContext context) {
-    final signalColor = switch (device.signalQuality) {
-      SignalQuality.excellent => AppColors.signalExcellent,
-      SignalQuality.good => AppColors.signalGood,
-      SignalQuality.fair => AppColors.signalFair,
-    };
+    final theme = Theme.of(context);
+    final subtitle = [
+      'Home trainer',
+      if (lastUsed) 'dernier utilisé',
+      if (_bars == 1) 'signal faible, rapprochez-vous',
+    ].join(' · ');
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
+    return Semantics(
+      button: true,
+      label: '${device.name}, $subtitle',
+      excludeSemantics: true,
+      child: Material(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isConnected ? AppColors.success : AppColors.surfaceBorder,
-        ),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: AppColors.surfaceLight,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(
-            Icons.pedal_bike,
-            color: isConnected ? AppColors.success : AppColors.primary,
-          ),
-        ),
-        title: Text(
-          device.name,
-          style: Theme.of(context).textTheme.titleSmall,
-        ),
-        subtitle: Row(
-          children: [
-            Icon(Icons.signal_cellular_alt, size: 12, color: signalColor),
-            const SizedBox(width: 4),
-            Text(
-              device.signalQuality.label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: signalColor,
-                  ),
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: enabled && !connected ? onTap : null,
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 72),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: lastUsed || connected
+                    ? AppColors.primary
+                    : AppColors.surfaceBorder,
+              ),
             ),
-          ],
-        ),
-        trailing: isConnecting
-            ? const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : isConnected
-                ? Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppColors.success,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      'Connecte',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: Colors.white,
-                          ),
-                    ),
-                  )
-                : ElevatedButton(
-                    onPressed: onConnect,
-                    style: ElevatedButton.styleFrom(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    ),
-                    child: const Text('Connecter'),
+            child: Row(
+              children: [
+                const Icon(Icons.pedal_bike,
+                    color: AppColors.primary, size: 28),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(device.name, style: theme.textTheme.titleMedium),
+                      const SizedBox(height: 2),
+                      Text(subtitle, style: theme.textTheme.bodySmall),
+                    ],
                   ),
+                ),
+                _SignalBars(bars: _bars),
+                const SizedBox(width: 14),
+                if (connecting)
+                  const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(strokeWidth: 2.5),
+                  )
+                else if (connected)
+                  const Icon(Icons.check_circle, color: AppColors.success)
+                else
+                  Text(
+                    'Connecter',
+                    style: theme.textTheme.labelLarge
+                        ?.copyWith(color: AppColors.primaryLight),
+                  ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
 }
 
-class _HelpItem extends StatelessWidget {
-  const _HelpItem({required this.number, required this.text});
+class _SignalBars extends StatelessWidget {
+  const _SignalBars({required this.bars});
 
-  final String number;
-  final String text;
+  final int bars;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        for (var i = 1; i <= 3; i++)
           Container(
-            width: 24,
-            height: 24,
+            width: 4,
+            height: 5.0 + i * 4,
+            margin: const EdgeInsets.only(left: 2),
             decoration: BoxDecoration(
-              color: AppColors.primary,
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                number,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              color:
+                  i <= bars ? AppColors.textSecondary : AppColors.surfaceBorder,
+              borderRadius: BorderRadius.circular(1),
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(child: Text(text)),
+      ],
+    );
+  }
+}
+
+class _IssueCard extends ConsumerWidget {
+  const _IssueCard({required this.issue, this.error});
+
+  final ScanIssue issue;
+  final String? error;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scanner = ref.read(bleScannerProvider.notifier);
+    return switch (issue) {
+      ScanIssue.bluetoothOff => _MessageCard(
+          icon: Icons.bluetooth_disabled,
+          color: AppColors.warning,
+          title: 'Le Bluetooth est désactivé',
+          text: 'Activez-le pour trouver le home trainer.',
+          actionLabel: 'Activer le Bluetooth',
+          onAction: () async {
+            try {
+              await FlutterBluePlus.turnOn();
+            } catch (_) {}
+            await scanner.startScan();
+          },
+        ),
+      ScanIssue.permissionDenied => _MessageCard(
+          icon: Icons.lock_outline,
+          color: AppColors.warning,
+          title: 'Autorisation nécessaire',
+          text: 'Xwift a besoin de l\'autorisation « Appareils à proximité » '
+              'pour trouver le home trainer.',
+          actionLabel: 'Autoriser',
+          onAction: scanner.startScan,
+        ),
+      ScanIssue.permissionBlocked => _MessageCard(
+          icon: Icons.lock_outline,
+          color: AppColors.warning,
+          title: 'Autorisation refusée',
+          text: 'Autorisez « Appareils à proximité » pour Xwift dans les '
+              'réglages du téléphone, puis revenez ici.',
+          actionLabel: 'Ouvrir les réglages',
+          onAction: openAppSettings,
+        ),
+      ScanIssue.failed => _MessageCard(
+          icon: Icons.error_outline,
+          color: AppColors.error,
+          title: 'La recherche a échoué',
+          text: error ?? '',
+          actionLabel: 'Réessayer',
+          onAction: scanner.startScan,
+        ),
+      ScanIssue.none => const SizedBox.shrink(),
+    };
+  }
+}
+
+class _MessageCard extends StatelessWidget {
+  const _MessageCard({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.text,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String text;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: color),
+              const SizedBox(width: 10),
+              Expanded(child: Text(title, style: theme.textTheme.titleSmall)),
+            ],
+          ),
+          if (text.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(text,
+                style: theme.textTheme.bodyMedium?.copyWith(height: 1.4)),
+          ],
+          if (actionLabel != null) ...[
+            const SizedBox(height: 12),
+            ElevatedButton(onPressed: onAction, child: Text(actionLabel!)),
+          ],
         ],
       ),
     );

@@ -9,8 +9,9 @@ Xwift est une application Flutter qui permet de controler votre velo d'apparteme
 ### Fonctionnalites principales
 
 - **Connexion Bluetooth FTMS** : Detection et connexion automatique aux home trainers compatibles FTMS
-- **Mode SIM** : Simulation de pente (-10% a +10%) pour reproduire les conditions de terrain
-- **Mode ERG** : Maintien d'une puissance cible constante (ideal pour les entrainements structures)
+- **Un seul écran de sortie** : trois modes exclusifs pour régler l'effort, Pente (simulation, −10 % à +20 %), Puissance (ERG) et Résistance, avec gros boutons −/+, raccourcis et confirmation de ce que le home trainer a appliqué
+- **Programmes ERG** : exemples calculés sur votre FTP ou fichiers .zwo/.erg/.mrc importés, intervalle suivant, « Passer », intensité ±5 %
+- **Fonctionne sans home trainer** : les réglages sont gardés et envoyés à la connexion ; reconnexion automatique au dernier appareil
 - **Moniteur cardiaque** : Connexion a une ceinture ou montre cardiaque Bluetooth
 - **Telemetrie en temps reel** : Affichage de la puissance, cadence, vitesse et frequence cardiaque
 - **Zones de puissance** : Visualisation coloree basee sur votre FTP
@@ -61,14 +62,19 @@ L'application necessite les permissions suivantes sur Android :
 
 ## Utilisation
 
-1. **Ecran d'accueil** : Lancez l'application et appuyez sur "Connecter"
-2. **Connexion** : Selectionnez votre home trainer dans la liste des appareils detectes
-3. **Dashboard** : Une fois connecte, vous arrivez sur l'ecran principal
-   - Choisissez le mode SIM ou ERG
-   - En mode SIM, ajustez la pente avec les boutons +/-
-   - En mode ERG, definissez votre puissance cible
-4. **Demarrer** : Appuyez sur "Demarrer" pour lancer la session
-5. **Fin de session** : Appuyez sur "Arreter" puis "Sauvegarder" pour conserver vos donnees
+1. **Accueil** : touchez « Rouler ». L'application fonctionne aussi sans home trainer (chrono, cardio) ; « Connecter un home trainer » ouvre la recherche.
+2. **Connexion** : allumez le home trainer, pédalez quelques tours, puis touchez son nom. Xwift s'en souvient et s'y reconnecte seul, au lancement et après une coupure. En haut de l'écran de sortie, la pastille montre l'état de la connexion. Un toucher reconnecte le home trainer ou ouvre le diagnostic : données reçues par seconde, contrôle obtenu, modes pris en charge.
+3. **Régler l'effort** : choisissez Pente, Puissance ou Résistance, puis utilisez les boutons − / + (maintenir pour répéter) ou les raccourcis. La ligne d'état indique si le home trainer a appliqué le réglage, ou pourquoi il l'a refusé.
+4. **Programme** : en mode Puissance, « Suivre un programme » lance un entraînement ; la puissance suit les intervalles pendant l'enregistrement.
+5. **Enregistrer** : « Démarrer la sortie », puis « Pause » ; en pause, « Terminer » pour nommer et enregistrer la sortie (ou la supprimer).
+
+Les valeurs affichent « -- » quand le home trainer n'envoie rien : jamais de valeur figée.
+
+### Tests
+
+```bash
+flutter test
+```
 
 ## Architecture technique
 

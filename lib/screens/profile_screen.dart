@@ -27,7 +27,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/'),
         ),
         title: const Text('Profil'),
         actions: [
@@ -260,7 +260,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               title: const Text('Appareils connectes'),
               onTap: () {
                 Navigator.pop(ctx);
-                context.go('/connect');
+                context.push('/connect');
               },
             ),
             const SizedBox(height: 16),

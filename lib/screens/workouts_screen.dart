@@ -8,6 +8,8 @@ import 'package:file_picker/file_picker.dart';
 import '../core/theme/app_colors.dart';
 import '../core/database/database_provider.dart';
 import '../models/workout_plan.dart';
+import '../features/control/trainer_control_provider.dart';
+import '../features/settings/user_settings_provider.dart';
 import '../features/workout/parsers/workout_parser.dart';
 
 class WorkoutsScreen extends ConsumerStatefulWidget {
@@ -35,10 +37,11 @@ class _WorkoutsScreenState extends ConsumerState<WorkoutsScreen> {
           final content = await File(file.path!).readAsString();
           final extension = file.extension ?? 'zwo';
 
+          final ftp = ref.read(userSettingsProvider).valueOrNull?.ftp ?? 200;
           final workout = WorkoutParserFactory.parseContent(
             content,
             extension,
-            ftp: 200, // TODO: Use user's FTP
+            ftp: ftp,
           );
 
           final repo = ref.read(workoutRepositoryProvider);
@@ -273,19 +276,32 @@ class _WorkoutCard extends StatelessWidget {
   }
 }
 
-class _WorkoutDetailsSheet extends StatelessWidget {
+class _WorkoutDetailsSheet extends ConsumerWidget {
   const _WorkoutDetailsSheet({required this.workout});
 
   final WorkoutPlan workout;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       padding: const EdgeInsets.all(24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                ref.read(trainerControlProvider.notifier).startProgram(workout);
+                Navigator.pop(context);
+                context.push('/ride');
+              },
+              icon: const Icon(Icons.play_arrow),
+              label: const Text('Rouler avec ce programme'),
+            ),
+          ),
+          const SizedBox(height: 16),
           Row(
             children: [
               Expanded(

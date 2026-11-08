@@ -132,7 +132,7 @@ class HrScannerNotifier extends StateNotifier<HrScanState> {
     await FlutterBluePlus.stopScan();
     await _scanSubscription?.cancel();
     _scanSubscription = null;
-    state = state.copyWith(isScanning: false);
+    if (mounted) state = state.copyWith(isScanning: false);
   }
 
   @override
@@ -259,20 +259,20 @@ class HrConnectionNotifier extends StateNotifier<HrConnectionState> {
   }
 
   void _handleHrData(List<int> value) {
-    if (value.isEmpty) return;
+    if (value.length < 2) return;
 
     // Parse HR measurement according to BLE HR Profile spec
     final flags = value[0];
-    int heartRate;
+    final int heartRate;
 
     // Bit 0 of flags: 0 = HR is UINT8, 1 = HR is UINT16
     if ((flags & 0x01) == 0) {
-      // HR is UINT8
       heartRate = value[1];
     } else {
-      // HR is UINT16 (Little Endian)
+      if (value.length < 3) return;
       heartRate = value[1] | (value[2] << 8);
     }
+    if (heartRate == 0 || !mounted) return; // 0 = sensor not in contact
 
     state = state.copyWith(currentHeartRate: heartRate);
     _hrStreamController.add(heartRate);
@@ -299,7 +299,7 @@ class HrConnectionNotifier extends StateNotifier<HrConnectionState> {
       _bleDevice = null;
     }
 
-    state = const HrConnectionState();
+    if (mounted) state = const HrConnectionState();
   }
 
   @override

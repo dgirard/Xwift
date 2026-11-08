@@ -20,13 +20,16 @@ class FtmsDevice extends Equatable {
   final PowerRange? powerRange;
 
   factory FtmsDevice.fromScanResult(ScanResult result) {
-    return FtmsDevice(
-      id: result.device.remoteId.str,
-      name: result.device.platformName.isNotEmpty
-          ? result.device.platformName
-          : 'Unknown Device',
-      rssi: result.rssi,
-    );
+    final id = result.device.remoteId.str;
+    // The name may only be in the advertisement (not yet in the device cache).
+    final advName = result.advertisementData.advName;
+    final platformName = result.device.platformName;
+    final name = advName.isNotEmpty
+        ? advName
+        : platformName.isNotEmpty
+            ? platformName
+            : 'Home trainer ${id.length > 5 ? id.substring(id.length - 5) : id}';
+    return FtmsDevice(id: id, name: name, rssi: result.rssi);
   }
 
   /// Signal quality based on RSSI

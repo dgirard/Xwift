@@ -30,6 +30,10 @@ class BikeTelemetry extends Equatable {
   final int? resistanceLevel; // Current resistance level
   final DateTime timestamp;
 
+  /// True when the trainer currently sends live values (power, cadence or speed).
+  bool get hasData =>
+      instantPower != null || instantCadence != null || instantSpeed != null;
+
   /// Get power zone based on FTP
   PowerZone getPowerZone(int ftp) {
     if (instantPower == null) return PowerZone.recovery;

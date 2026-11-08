@@ -1,184 +1,173 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/theme/app_colors.dart';
+import '../features/ride/ride_session_provider.dart';
+import '../widgets/ride/ride_format.dart';
+import '../widgets/ride/trainer_status.dart';
 
-class WelcomeScreen extends StatelessWidget {
+/// Home screen. Riding is always possible, with or without a trainer.
+class WelcomeScreen extends ConsumerWidget {
   const WelcomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final ride = ref.watch(rideSessionProvider);
+    final trainer = ref.watch(trainerLinkProvider);
+
+    final String trainerText = switch (trainer.link) {
+      TrainerLink.connected => 'Connecté à ${trainer.title}.',
+      TrainerLink.offline ||
+      TrainerLink.failed =>
+        '${trainer.title} sera reconnecté automatiquement.',
+      TrainerLink.none =>
+        'Pas de home trainer ? Vous pouvez quand même rouler et enregistrer, '
+            'et le connecter à tout moment.',
+      _ => 'Connexion à ${trainer.title}…',
+    };
+
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            children: [
-              // Header with logo and skip
-              Padding(
-                padding: const EdgeInsets.only(top: 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: IntrinsicHeight(
+                child: Column(
                   children: [
+                    const SizedBox(height: 12),
                     Row(
                       children: [
-                        Icon(
-                          Icons.pedal_bike,
-                          color: AppColors.primary,
-                          size: 28,
-                        ),
+                        const Icon(Icons.pedal_bike,
+                            color: AppColors.primary, size: 28),
                         const SizedBox(width: 8),
-                        Text(
-                          'Xwift',
-                          style: Theme.of(context).textTheme.titleMedium,
+                        Text('Xwift', style: theme.textTheme.titleMedium),
+                        const Spacer(),
+                        IconButton(
+                          tooltip: 'Profil et réglages',
+                          icon: const Icon(Icons.person_outline),
+                          onPressed: () => context.push('/profile'),
                         ),
                       ],
                     ),
-                    TextButton(
-                      onPressed: () => context.push('/connect'),
-                      child: Text(
-                        'Passer',
-                        style: TextStyle(color: AppColors.textSecondary),
+                    const Spacer(),
+                    Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.surfaceBorder),
+                      ),
+                      child: Icon(
+                        Icons.directions_bike,
+                        size: 64,
+                        color: AppColors.primary.withValues(alpha: 0.8),
                       ),
                     ),
-                  ],
-                ),
-              ),
-
-              const Spacer(),
-
-              // Hero image placeholder
-              Container(
-                height: 200,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.surfaceBorder),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.directions_bike,
-                      size: 80,
-                      color: AppColors.primary.withOpacity(0.5),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Votre home trainer,',
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    Text(
+                      'simplement',
+                      style: theme.textTheme.headlineLarge?.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Réglez la pente, la puissance ou la résistance, suivez vos '
+                      'données en direct et envoyez vos sorties sur Strava.',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const Spacer(),
+                    const SizedBox(height: 24),
+                    if (ride.isActive) ...[
+                      _OngoingRide(ride: ride),
+                      const SizedBox(height: 12),
+                    ],
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () => context.push('/ride'),
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(58),
+                        ),
+                        icon: const Icon(Icons.play_arrow),
+                        label: Text(
+                            ride.isActive ? 'Revenir à la sortie' : 'Rouler'),
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Zwift Ride',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
+                      trainerText,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodySmall,
                     ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => context.push(
+                          trainer.link == TrainerLink.connected
+                              ? '/connect'
+                              : '/connect?next=ride',
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(52),
+                        ),
+                        icon: const Icon(Icons.bluetooth),
+                        label: Text(
+                          trainer.link == TrainerLink.connected
+                              ? 'Changer de home trainer'
+                              : 'Connecter un home trainer',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _QuickAccessButton(
+                            icon: Icons.history,
+                            label: 'Mes sorties',
+                            onTap: () => context.push('/settings/export'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _QuickAccessButton(
+                            icon: Icons.list_alt,
+                            label: 'Entraînements',
+                            onTap: () => context.push('/workouts'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _QuickAccessButton(
+                            icon: Icons.favorite_border,
+                            label: 'Cardio',
+                            onTap: () => context.push('/hr-monitor'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
-
-              const SizedBox(height: 32),
-
-              // Title and subtitle
-              Text(
-                'Maitrisez votre',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-              ),
-              Text(
-                'Zwift Ride',
-                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Controlez precis, shifting virtuel et donnees\nen temps reel. Connectez-vous et roulez\nplus fort.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-              ),
-
-              const SizedBox(height: 40),
-
-              // Feature icons
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _FeatureIcon(
-                    icon: Icons.speed,
-                    label: 'Virtual\nShifting',
-                  ),
-                  _FeatureIcon(
-                    icon: Icons.bar_chart,
-                    label: 'Telemetrie\nLive',
-                  ),
-                  _FeatureIcon(
-                    icon: Icons.sync,
-                    label: 'Sync\nStrava',
-                  ),
-                ],
-              ),
-
-              const Spacer(),
-
-              // Connect button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => context.push('/connect'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                  ),
-                  child: const Text('Connecter mon Ride'),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Quick access buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: _QuickAccessButton(
-                      icon: Icons.history,
-                      label: 'Historique',
-                      onTap: () => context.push('/profile'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _QuickAccessButton(
-                      icon: Icons.fitness_center,
-                      label: 'Workouts',
-                      onTap: () => context.push('/workouts'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _QuickAccessButton(
-                      icon: Icons.upload_file,
-                      label: 'Exporter',
-                      onTap: () => context.push('/settings/export'),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-
-              // Terms
-              Text(
-                'En continuant, vous acceptez nos Conditions d\'utilisation.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textTertiary,
-                    ),
-                textAlign: TextAlign.center,
-              ),
-
-              const SizedBox(height: 24),
-            ],
+            ),
           ),
         ),
       ),
@@ -186,40 +175,41 @@ class WelcomeScreen extends StatelessWidget {
   }
 }
 
-class _FeatureIcon extends StatelessWidget {
-  const _FeatureIcon({
-    required this.icon,
-    required this.label,
-  });
+class _OngoingRide extends StatelessWidget {
+  const _OngoingRide({required this.ride});
 
-  final IconData icon;
-  final String label;
+  final RideSessionState ride;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          width: 64,
-          height: 64,
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.surfaceBorder),
+    final theme = Theme.of(context);
+    final color = ride.isPaused ? AppColors.warning : AppColors.error;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        children: [
+          Icon(ride.isPaused ? Icons.pause_circle : Icons.fiber_manual_record,
+              color: color),
+          const SizedBox(width: 10),
+          Text(
+            ride.isPaused ? 'Sortie en pause' : 'Sortie en cours',
+            style: theme.textTheme.titleSmall,
           ),
-          child: Icon(
-            icon,
-            color: AppColors.primary,
-            size: 28,
+          const Spacer(),
+          Text(
+            formatClock(ride.elapsed),
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.labelSmall,
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -244,23 +234,16 @@ class _QuickAccessButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: AppColors.surfaceBorder),
           ),
           child: Column(
             children: [
-              Icon(
-                icon,
-                color: AppColors.primary,
-                size: 24,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: Theme.of(context).textTheme.labelSmall,
-              ),
+              Icon(icon, color: AppColors.primary, size: 24),
+              const SizedBox(height: 6),
+              Text(label, style: Theme.of(context).textTheme.labelMedium),
             ],
           ),
         ),

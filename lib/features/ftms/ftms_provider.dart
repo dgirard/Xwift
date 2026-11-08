@@ -1,64 +1,110 @@
 import 'dart:async';
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/ftms_constants.dart';
 import '../../models/bike_telemetry.dart';
+import '../../models/ftms_device.dart';
 import '../bluetooth/ble_provider.dart';
+import 'indoor_bike_data.dart';
 
-/// FTMS Control provider
+/// FTMS control of the connected trainer.
+///
+/// Rebuilt only when the Bluetooth link becomes ready or is lost, so that a
+/// reconnection gets a fresh notifier (new characteristics, control requested
+/// again) while unrelated connection state changes do not reset it.
 final ftmsControlProvider =
     StateNotifierProvider<FtmsControlNotifier, FtmsControlState>((ref) {
-  final connectionState = ref.watch(bleConnectionProvider);
-  return FtmsControlNotifier(ref, connectionState);
+  final linkReady = ref.watch(
+    bleConnectionProvider.select((s) => s.status == ConnectionStatus.ready),
+  );
+  return FtmsControlNotifier(ref, connected: linkReady);
 });
 
-/// Telemetry stream provider
+/// Live trainer data stream (merged notifications, see [TelemetryMerger]).
 final telemetryStreamProvider = StreamProvider<BikeTelemetry>((ref) {
-  final ftmsControl = ref.watch(ftmsControlProvider.notifier);
-  return ftmsControl.telemetryStream;
+  return ref.watch(ftmsControlProvider.notifier).telemetryStream;
 });
 
-/// Current telemetry provider
+/// Current trainer data. Empty when no trainer is connected or no data arrived.
 final currentTelemetryProvider = Provider<BikeTelemetry>((ref) {
   final telemetry = ref.watch(telemetryStreamProvider);
+  // After a reconnection the stream provider reloads while keeping the
+  // previous value: never show (or record) values from a previous link.
+  if (telemetry.isLoading || telemetry.hasError) return BikeTelemetry.empty();
   return telemetry.valueOrNull ?? BikeTelemetry.empty();
 });
+
+void _log(String message) {
+  if (kDebugMode) debugPrint('[FTMS] $message');
+}
+
+String _hex(List<int> bytes) =>
+    bytes.map((b) => '0x${b.toRadixString(16).padLeft(2, '0')}').join(' ');
 
 /// FTMS Control state
 class FtmsControlState {
   const FtmsControlState({
+    this.isReady = false,
     this.hasControl = false,
     this.isStarted = false,
     this.currentResistance,
     this.currentTargetPower,
     this.currentGrade,
+    this.features,
+    this.resistanceRange,
+    this.powerRange,
+    this.packetsPerSecond = 0,
+    this.lastPacketAt,
     this.error,
   });
 
+  /// Commands can be sent (control point found and its indications enabled).
+  final bool isReady;
   final bool hasControl;
   final bool isStarted;
   final double? currentResistance;
   final int? currentTargetPower;
   final double? currentGrade;
+
+  /// Capabilities read from the trainer (null until read or if unavailable).
+  final FtmsFeatures? features;
+  final ResistanceRange? resistanceRange;
+  final PowerRange? powerRange;
+
+  /// Indoor Bike Data notifications received during the last second.
+  final int packetsPerSecond;
+  final DateTime? lastPacketAt;
   final String? error;
 
   FtmsControlState copyWith({
+    bool? isReady,
     bool? hasControl,
     bool? isStarted,
     double? currentResistance,
     int? currentTargetPower,
     double? currentGrade,
+    FtmsFeatures? features,
+    ResistanceRange? resistanceRange,
+    PowerRange? powerRange,
+    int? packetsPerSecond,
+    DateTime? lastPacketAt,
     String? error,
   }) {
     return FtmsControlState(
+      isReady: isReady ?? this.isReady,
       hasControl: hasControl ?? this.hasControl,
       isStarted: isStarted ?? this.isStarted,
       currentResistance: currentResistance ?? this.currentResistance,
       currentTargetPower: currentTargetPower ?? this.currentTargetPower,
       currentGrade: currentGrade ?? this.currentGrade,
+      features: features ?? this.features,
+      resistanceRange: resistanceRange ?? this.resistanceRange,
+      powerRange: powerRange ?? this.powerRange,
+      packetsPerSecond: packetsPerSecond ?? this.packetsPerSecond,
+      lastPacketAt: lastPacketAt ?? this.lastPacketAt,
       error: error,
     );
   }
@@ -66,13 +112,21 @@ class FtmsControlState {
 
 /// FTMS Control notifier
 class FtmsControlNotifier extends StateNotifier<FtmsControlState> {
-  FtmsControlNotifier(this._ref, this._connectionState)
-      : super(const FtmsControlState()) {
+  FtmsControlNotifier(
+    this._ref, {
+    required bool connected,
+    @visibleForTesting DateTime Function()? clock,
+  })  : _connected = connected,
+        _clock = clock ?? DateTime.now,
+        super(const FtmsControlState()) {
     _init();
   }
 
+  static const _responseTimeout = Duration(seconds: 4);
+
   final Ref _ref;
-  final BleConnectionState _connectionState;
+  final bool _connected;
+  final DateTime Function() _clock;
 
   BluetoothCharacteristic? _controlPoint;
   BluetoothCharacteristic? _indoorBikeData;
@@ -81,465 +135,386 @@ class FtmsControlNotifier extends StateNotifier<FtmsControlState> {
   BluetoothCharacteristic? _supportedResistanceRange;
   BluetoothCharacteristic? _supportedPowerRange;
 
-  StreamSubscription<List<int>>? _controlPointSubscription;
-  StreamSubscription<List<int>>? _telemetrySubscription;
-  StreamSubscription<List<int>>? _statusSubscription;
-
+  final List<StreamSubscription<List<int>>> _subscriptions = [];
   final _telemetryController = StreamController<BikeTelemetry>.broadcast();
+  final _merger = TelemetryMerger();
+  BikeTelemetry? _lastEmitted;
+  Timer? _healthTimer;
+  int _packetsThisSecond = 0;
+
+  final _ready = Completer<bool>();
+
+  // Control Point commands are serialized: one in flight at a time.
+  final _queue = <_FtmsCommand>[];
+  _FtmsCommand? _current;
+  Future<FtmsResponse>? _controlRequest;
+  bool _resistanceAsUint8 = false;
+
   Stream<BikeTelemetry> get telemetryStream => _telemetryController.stream;
 
-  // Command queue for serializing Control Point writes
-  final _commandQueue = <_FtmsCommand>[];
-  bool _isProcessingCommand = false;
-  Completer<FtmsResponse>? _currentCommandCompleter;
+  /// Completes with true once commands can be sent, false if they never can.
+  Future<bool> get ready => _ready.future;
+
+  // ---------------------------------------------------------------------------
+  // Initialisation
+  // ---------------------------------------------------------------------------
 
   Future<void> _init() async {
-    print('[FTMS] _init() called, isConnected: ${_connectionState.isConnected}');
-    if (!_connectionState.isConnected) {
-      print('[FTMS] Not connected, skipping init');
+    if (!_connected) {
+      _markReady(false);
       return;
     }
 
+    final services = _ref.read(bleConnectionProvider.notifier).services;
+    BluetoothService? ftmsService;
+    for (final s in services ?? const <BluetoothService>[]) {
+      if (s.uuid == FtmsConstants.serviceUuid) ftmsService = s;
+    }
+    if (ftmsService == null) {
+      _log('FTMS service not found');
+      _markReady(false);
+      if (mounted) {
+        state =
+            state.copyWith(error: 'Service FTMS introuvable sur cet appareil');
+      }
+      return;
+    }
+
+    for (final char in ftmsService.characteristics) {
+      final uuid = char.uuid;
+      if (uuid == FtmsConstants.controlPoint) {
+        _controlPoint = char;
+      } else if (uuid == FtmsConstants.indoorBikeData) {
+        _indoorBikeData = char;
+      } else if (uuid == FtmsConstants.machineStatus) {
+        _machineStatus = char;
+      } else if (uuid == FtmsConstants.fitnessMachineFeature) {
+        _fitnessMachineFeature = char;
+      } else if (uuid == FtmsConstants.supportedResistanceRange) {
+        _supportedResistanceRange = char;
+      } else if (uuid == FtmsConstants.supportedPowerRange) {
+        _supportedPowerRange = char;
+      }
+    }
+    _log('characteristics: control point ${_controlPoint != null}, '
+        'bike data ${_indoorBikeData != null}, status ${_machineStatus != null}');
+
     try {
-      final services = _ref.read(bleConnectionProvider.notifier).services;
-      if (services == null) {
-        print('[FTMS] No services found');
-        return;
+      // 1. Control point indications first. The trainer answers a command only
+      //    when they are enabled (FTMS §4.16.1), so commands wait for this step.
+      final controlPoint = _controlPoint;
+      if (controlPoint != null) {
+        await _subscribe(controlPoint, _handleControlPointResponse);
       }
+      if (!mounted) return;
+      _markReady(controlPoint != null);
 
-      print('[FTMS] Looking for FTMS service (${FtmsConstants.serviceUuid})...');
-      final ftmsService = services.firstWhere(
-        (s) => s.uuid == FtmsConstants.serviceUuid,
-        orElse: () => throw Exception('FTMS service not found'),
-      );
-      print('[FTMS] Found FTMS service');
-
-      // Get characteristics
-      print('[FTMS] Scanning ${ftmsService.characteristics.length} characteristics...');
-      for (final char in ftmsService.characteristics) {
-        if (char.uuid == FtmsConstants.controlPoint) {
-          _controlPoint = char;
-          print('[FTMS] Found Control Point characteristic');
-        } else if (char.uuid == FtmsConstants.indoorBikeData) {
-          _indoorBikeData = char;
-          print('[FTMS] Found Indoor Bike Data characteristic');
-        } else if (char.uuid == FtmsConstants.machineStatus) {
-          _machineStatus = char;
-          print('[FTMS] Found Machine Status characteristic');
-        } else if (char.uuid == FtmsConstants.fitnessMachineFeature) {
-          _fitnessMachineFeature = char;
-          print('[FTMS] Found Fitness Machine Feature characteristic');
-        } else if (char.uuid == FtmsConstants.supportedResistanceRange) {
-          _supportedResistanceRange = char;
-          print('[FTMS] Found Supported Resistance Range characteristic');
-        } else if (char.uuid == FtmsConstants.supportedPowerRange) {
-          _supportedPowerRange = char;
-          print('[FTMS] Found Supported Power Range characteristic');
-        }
+      // 2. Live data and machine status.
+      final bikeData = _indoorBikeData;
+      if (bikeData != null) {
+        await _subscribe(bikeData, _handleTelemetryData);
+        if (!mounted) return;
       }
+      final status = _machineStatus;
+      if (status != null) await _subscribe(status, _handleStatusChange);
 
-      if (_controlPoint == null) {
-        print('[FTMS] WARNING: Control Point characteristic NOT found!');
-      }
-
-      // Read device features
+      // 3. Capabilities: supported targets and ranges.
       await _readDeviceFeatures();
-
-      // Enable notifications
-      await _enableNotifications();
-      print('[FTMS] Notifications enabled');
     } catch (e) {
-      print('[FTMS] Error initializing: $e');
-      state = state.copyWith(error: 'Failed to initialize FTMS: $e');
+      _log('init error: $e');
+      _markReady(false);
+      if (mounted) {
+        state = state.copyWith(
+            error: 'Initialisation du home trainer impossible : $e');
+      }
     }
   }
 
-  /// Read device features from Fitness Machine Feature characteristic
+  /// Listens to [char] then enables its notifications/indications, retrying a
+  /// few times because GATT operations can fail transiently right after a
+  /// connection.
+  Future<void> _subscribe(
+    BluetoothCharacteristic char,
+    void Function(List<int>) onValue,
+  ) async {
+    if (!mounted) return;
+    _subscriptions.add(char.onValueReceived.listen(onValue));
+    Object? lastError;
+    for (var attempt = 1; attempt <= 3; attempt++) {
+      try {
+        await char.setNotifyValue(true);
+        return;
+      } catch (e) {
+        lastError = e;
+        _log('setNotifyValue(${char.uuid}) attempt $attempt failed: $e');
+        await Future<void>.delayed(const Duration(milliseconds: 300));
+        if (!mounted) return;
+      }
+    }
+    throw lastError!;
+  }
+
+  void _markReady(bool ok) {
+    if (_ready.isCompleted) return;
+    _ready.complete(ok);
+    if (mounted) state = state.copyWith(isReady: ok);
+  }
+
+  /// Reads the Fitness Machine Feature and the supported ranges.
   Future<void> _readDeviceFeatures() async {
-    if (_fitnessMachineFeature != null) {
-      try {
-        final value = await _fitnessMachineFeature!.read();
-        print('[FTMS] Fitness Machine Feature raw: ${value.map((b) => '0x${b.toRadixString(16).padLeft(2, '0')}').join(' ')}');
+    FtmsFeatures? features;
+    ResistanceRange? resistanceRange;
+    PowerRange? powerRange;
 
+    final featureChar = _fitnessMachineFeature;
+    if (featureChar != null) {
+      try {
+        final value = await featureChar.read();
+        _log('Fitness Machine Feature raw: ${_hex(value)}');
         if (value.length >= 8) {
-          // First 4 bytes: Fitness Machine Features
-          final featureFlags = value[0] | (value[1] << 8) | (value[2] << 16) | (value[3] << 24);
-          // Next 4 bytes: Target Setting Features
-          final targetFlags = value[4] | (value[5] << 8) | (value[6] << 16) | (value[7] << 24);
-
-          print('[FTMS] Feature Flags: 0x${featureFlags.toRadixString(16).padLeft(8, '0')}');
-          print('[FTMS] Target Flags: 0x${targetFlags.toRadixString(16).padLeft(8, '0')}');
-
-          // Parse Feature Flags (bits 0-17)
-          print('[FTMS] --- SUPPORTED FEATURES ---');
-          if (featureFlags & 0x0001 != 0) print('[FTMS]   - Average Speed');
-          if (featureFlags & 0x0002 != 0) print('[FTMS]   - Cadence');
-          if (featureFlags & 0x0004 != 0) print('[FTMS]   - Total Distance');
-          if (featureFlags & 0x0008 != 0) print('[FTMS]   - Inclination');
-          if (featureFlags & 0x0010 != 0) print('[FTMS]   - Elevation Gain');
-          if (featureFlags & 0x0020 != 0) print('[FTMS]   - Pace');
-          if (featureFlags & 0x0040 != 0) print('[FTMS]   - Step Count');
-          if (featureFlags & 0x0080 != 0) print('[FTMS]   - Resistance Level');
-          if (featureFlags & 0x0100 != 0) print('[FTMS]   - Stride Count');
-          if (featureFlags & 0x0200 != 0) print('[FTMS]   - Expended Energy');
-          if (featureFlags & 0x0400 != 0) print('[FTMS]   - Heart Rate');
-          if (featureFlags & 0x0800 != 0) print('[FTMS]   - Metabolic Equivalent');
-          if (featureFlags & 0x1000 != 0) print('[FTMS]   - Elapsed Time');
-          if (featureFlags & 0x2000 != 0) print('[FTMS]   - Remaining Time');
-          if (featureFlags & 0x4000 != 0) print('[FTMS]   - Power Measurement');
-          if (featureFlags & 0x8000 != 0) print('[FTMS]   - Force on Belt');
-          if (featureFlags & 0x10000 != 0) print('[FTMS]   - Power Output');
-
-          // Parse Target Setting Features (bits 0-13)
-          print('[FTMS] --- TARGET SETTINGS SUPPORTED ---');
-          if (targetFlags & 0x0001 != 0) print('[FTMS]   - Speed Target');
-          if (targetFlags & 0x0002 != 0) print('[FTMS]   - Inclination Target');
-          if (targetFlags & 0x0004 != 0) print('[FTMS]   - Resistance Target');
-          if (targetFlags & 0x0008 != 0) print('[FTMS]   - Power Target');
-          if (targetFlags & 0x0010 != 0) print('[FTMS]   - Heart Rate Target');
-          if (targetFlags & 0x0020 != 0) print('[FTMS]   - Targeted Expended Energy');
-          if (targetFlags & 0x0040 != 0) print('[FTMS]   - Targeted Step Number');
-          if (targetFlags & 0x0080 != 0) print('[FTMS]   - Targeted Stride Number');
-          if (targetFlags & 0x0100 != 0) print('[FTMS]   - Targeted Distance');
-          if (targetFlags & 0x0200 != 0) print('[FTMS]   - Targeted Training Time');
-          if (targetFlags & 0x0400 != 0) print('[FTMS]   - Targeted Time in 2 HR Zones');
-          if (targetFlags & 0x0800 != 0) print('[FTMS]   - Targeted Time in 3 HR Zones');
-          if (targetFlags & 0x1000 != 0) print('[FTMS]   - Targeted Time in 5 HR Zones');
-          if (targetFlags & 0x2000 != 0) print('[FTMS]   - Indoor Bike Simulation');
-          if (targetFlags & 0x4000 != 0) print('[FTMS]   - Wheel Circumference');
-          if (targetFlags & 0x8000 != 0) print('[FTMS]   - Spin Down Control');
-          if (targetFlags & 0x10000 != 0) print('[FTMS]   - Targeted Cadence');
-
-          // Critical features for grade/resistance control
-          final supportsResistanceTarget = (targetFlags & 0x0004) != 0;
-          final supportsInclinationTarget = (targetFlags & 0x0002) != 0;
-          final supportsSimulation = (targetFlags & 0x2000) != 0;
-          final supportsPowerTarget = (targetFlags & 0x0008) != 0;
-
-          print('[FTMS] === SUMMARY ===');
-          print('[FTMS] Resistance Target: ${supportsResistanceTarget ? 'YES' : 'NO'}');
-          print('[FTMS] Inclination Target: ${supportsInclinationTarget ? 'YES' : 'NO'}');
-          print('[FTMS] Indoor Bike Simulation: ${supportsSimulation ? 'YES' : 'NO'}');
-          print('[FTMS] Power Target (ERG): ${supportsPowerTarget ? 'YES' : 'NO'}');
+          final f =
+              value[0] | (value[1] << 8) | (value[2] << 16) | (value[3] << 24);
+          final t =
+              value[4] | (value[5] << 8) | (value[6] << 16) | (value[7] << 24);
+          features = FtmsFeatures(
+            supportsCadence: f & 0x0002 != 0,
+            supportsDistance: f & 0x0004 != 0,
+            supportsResistance: f & 0x0080 != 0,
+            supportsExpendedEnergy: f & 0x0200 != 0,
+            supportsHeartRate: f & 0x0400 != 0,
+            supportsPower: f & 0x4000 != 0,
+            supportsTargetSpeed: t & 0x0001 != 0,
+            supportsTargetInclination: t & 0x0002 != 0,
+            supportsTargetResistance: t & 0x0004 != 0,
+            supportsTargetPower: t & 0x0008 != 0,
+            supportsTargetHeartRate: t & 0x0010 != 0,
+            supportsSimulation: t & 0x2000 != 0,
+            supportsTargetCadence: t & 0x10000 != 0,
+          );
+          _log('targets: resistance ${features.supportsTargetResistance}, '
+              'power ${features.supportsTargetPower}, '
+              'simulation ${features.supportsSimulation}');
         }
       } catch (e) {
-        print('[FTMS] Error reading features: $e');
-      }
-    } else {
-      print('[FTMS] Fitness Machine Feature characteristic not available');
-    }
-
-    // Read resistance range if available
-    if (_supportedResistanceRange != null) {
-      try {
-        final value = await _supportedResistanceRange!.read();
-        print('[FTMS] Resistance Range raw: ${value.map((b) => '0x${b.toRadixString(16).padLeft(2, '0')}').join(' ')}');
-        if (value.length >= 6) {
-          final data = ByteData.view(Uint8List.fromList(value).buffer);
-          final minRes = data.getInt16(0, Endian.little) * 0.1;
-          final maxRes = data.getInt16(2, Endian.little) * 0.1;
-          final incRes = data.getUint16(4, Endian.little) * 0.1;
-          print('[FTMS] Resistance Range: $minRes to $maxRes (increment: $incRes)');
-        }
-      } catch (e) {
-        print('[FTMS] Error reading resistance range: $e');
+        _log('feature read error: $e');
       }
     }
 
-    // Read power range if available
-    if (_supportedPowerRange != null) {
+    final resistanceChar = _supportedResistanceRange;
+    if (resistanceChar != null && mounted) {
       try {
-        final value = await _supportedPowerRange!.read();
-        print('[FTMS] Power Range raw: ${value.map((b) => '0x${b.toRadixString(16).padLeft(2, '0')}').join(' ')}');
+        final value = await resistanceChar.read();
         if (value.length >= 6) {
-          final data = ByteData.view(Uint8List.fromList(value).buffer);
-          final minPower = data.getInt16(0, Endian.little);
-          final maxPower = data.getInt16(2, Endian.little);
-          final incPower = data.getUint16(4, Endian.little);
-          print('[FTMS] Power Range: ${minPower}W to ${maxPower}W (increment: ${incPower}W)');
+          final data = ByteData.sublistView(Uint8List.fromList(value));
+          resistanceRange = ResistanceRange(
+            minimum: data.getInt16(0, Endian.little) * 0.1,
+            maximum: data.getInt16(2, Endian.little) * 0.1,
+            increment: data.getUint16(4, Endian.little) * 0.1,
+          );
+          _log('resistance range: ${resistanceRange.minimum} → '
+              '${resistanceRange.maximum} (step ${resistanceRange.increment})');
         }
       } catch (e) {
-        print('[FTMS] Error reading power range: $e');
+        _log('resistance range read error: $e');
       }
+    }
+
+    final powerChar = _supportedPowerRange;
+    if (powerChar != null && mounted) {
+      try {
+        final value = await powerChar.read();
+        if (value.length >= 6) {
+          final data = ByteData.sublistView(Uint8List.fromList(value));
+          powerRange = PowerRange(
+            minimum: data.getInt16(0, Endian.little),
+            maximum: data.getInt16(2, Endian.little),
+            increment: data.getUint16(4, Endian.little),
+          );
+          _log('power range: ${powerRange.minimum} → ${powerRange.maximum} W');
+        }
+      } catch (e) {
+        _log('power range read error: $e');
+      }
+    }
+
+    if (!mounted) return;
+    state = state.copyWith(
+      features: features,
+      resistanceRange: resistanceRange,
+      powerRange: powerRange,
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Notifications
+  // ---------------------------------------------------------------------------
+
+  /// Feeds a raw Indoor Bike Data notification, as received from the trainer
+  /// (used by tests to check the whole path from bytes to screen).
+  @visibleForTesting
+  void handleIndoorBikeData(List<int> value) => _handleTelemetryData(value);
+
+  void _handleTelemetryData(List<int> value) {
+    final packet = IndoorBikeDataPacket.parse(value);
+    if (packet == null || !mounted) return;
+    _packetsThisSecond++;
+    _healthTimer ??=
+        Timer.periodic(const Duration(seconds: 1), (_) => _onHealthTick());
+    _emit(_merger.add(packet, _clock()));
+  }
+
+  void _emit(BikeTelemetry telemetry) {
+    if (_telemetryController.isClosed) return;
+    _lastEmitted = telemetry;
+    _telemetryController.add(telemetry);
+  }
+
+  /// Once per second: publishes the data rate and expires values that stopped
+  /// arriving, so the screen never keeps showing frozen numbers.
+  void _onHealthTick() {
+    if (!mounted) return;
+    final current = _merger.current(_clock());
+    if (current != _lastEmitted) _emit(current);
+    final rate = _packetsThisSecond;
+    _packetsThisSecond = 0;
+    if (rate != state.packetsPerSecond ||
+        _merger.lastPacketAt != state.lastPacketAt) {
+      state = state.copyWith(
+        packetsPerSecond: rate,
+        lastPacketAt: _merger.lastPacketAt,
+      );
     }
   }
 
-  Future<void> _enableNotifications() async {
-    // Control Point indications
-    if (_controlPoint != null) {
-      await _controlPoint!.setNotifyValue(true);
-      _controlPointSubscription = _controlPoint!.onValueReceived.listen(
-        _handleControlPointResponse,
-      );
-    }
-
-    // Indoor Bike Data notifications
-    if (_indoorBikeData != null) {
-      await _indoorBikeData!.setNotifyValue(true);
-      _telemetrySubscription = _indoorBikeData!.onValueReceived.listen(
-        _handleTelemetryData,
-      );
-    }
-
-    // Machine Status notifications
-    if (_machineStatus != null) {
-      await _machineStatus!.setNotifyValue(true);
-      _statusSubscription = _machineStatus!.onValueReceived.listen(
-        _handleStatusChange,
-      );
+  void _handleStatusChange(List<int> value) {
+    if (value.isEmpty || !mounted) return;
+    switch (value[0]) {
+      case 0x01: // Reset
+      case 0xFF: // Control permission lost
+        _log('machine status 0x${value[0].toRadixString(16)}: control lost');
+        state = state.copyWith(hasControl: false);
+      case 0x02:
+        _log('stopped or paused by the user');
+      case 0x04:
+        _log('started or resumed by the user');
     }
   }
 
   void _handleControlPointResponse(List<int> value) {
-    print('[FTMS] Control Point response: ${value.map((b) => '0x${b.toRadixString(16).padLeft(2, '0')}').join(' ')}');
-    if (value.length < 3) {
-      print('[FTMS] Response too short (${value.length} bytes)');
+    _log('control point response: ${_hex(value)}');
+    if (value.length < 3 || value[0] != FtmsConstants.opCodeResponseCode)
+      return;
+    final command = _current;
+    if (command == null || command.opCode != value[1]) {
+      // Late answer to a command that already timed out: must not be taken as
+      // the answer to the command in flight.
+      _log('ignored response for opcode 0x${value[1].toRadixString(16)}');
       return;
     }
-
-    final responseCode = value[0];
-    final requestOpCode = value[1];
-    final resultCode = value[2];
-
-    if (responseCode == FtmsConstants.opCodeResponseCode) {
-      final isSuccess = resultCode == FtmsConstants.resultSuccess;
-      print('[FTMS] Response for opCode 0x${requestOpCode.toRadixString(16)}: ${isSuccess ? 'SUCCESS' : 'FAILED (code: $resultCode)'}');
-
-      final response = FtmsResponse(
-        requestOpCode: requestOpCode,
-        resultCode: resultCode,
-        isSuccess: isSuccess,
-      );
-
-      _currentCommandCompleter?.complete(response);
-      _currentCommandCompleter = null;
-      _isProcessingCommand = false;
-      _processNextCommand();
-    }
-  }
-
-  void _handleTelemetryData(List<int> value) {
-    final telemetry = _parseTelemetry(value);
-    _telemetryController.add(telemetry);
-  }
-
-  void _handleStatusChange(List<int> value) {
-    // Handle machine status changes (e.g., pause, stop)
-    // For now, just log it
-  }
-
-  BikeTelemetry _parseTelemetry(List<int> value) {
-    if (value.length < 2) return BikeTelemetry.empty();
-
-    final data = ByteData.view(Uint8List.fromList(value).buffer);
-    final flags = data.getUint16(0, Endian.little);
-
-    int offset = 2;
-    int? instantSpeed;
-    int? averageSpeed;
-    double? instantCadence;
-    double? averageCadence;
-    int? totalDistance;
-    int? resistanceLevel;
-    int? instantPower;
-    int? averagePower;
-    int? totalEnergy;
-    int? heartRate;
-
-    // Parse based on flags bitmap
-    // Bit 0: More Data (not present = instant speed present)
-    if ((flags & 0x0001) == 0 && offset + 2 <= value.length) {
-      instantSpeed = data.getUint16(offset, Endian.little);
-      offset += 2;
-    }
-
-    // Bit 1: Average Speed present
-    if ((flags & 0x0002) != 0 && offset + 2 <= value.length) {
-      averageSpeed = data.getUint16(offset, Endian.little);
-      offset += 2;
-    }
-
-    // Bit 2: Instantaneous Cadence present
-    if ((flags & 0x0004) != 0 && offset + 2 <= value.length) {
-      final raw = data.getUint16(offset, Endian.little);
-      instantCadence = raw * 0.5; // Resolution 0.5
-      offset += 2;
-    }
-
-    // Bit 3: Average Cadence present
-    if ((flags & 0x0008) != 0 && offset + 2 <= value.length) {
-      final raw = data.getUint16(offset, Endian.little);
-      averageCadence = raw * 0.5;
-      offset += 2;
-    }
-
-    // Bit 4: Total Distance present (24-bit)
-    if ((flags & 0x0010) != 0 && offset + 3 <= value.length) {
-      totalDistance = value[offset] |
-          (value[offset + 1] << 8) |
-          (value[offset + 2] << 16);
-      offset += 3;
-    }
-
-    // Bit 5: Resistance Level present
-    if ((flags & 0x0020) != 0 && offset + 2 <= value.length) {
-      resistanceLevel = data.getInt16(offset, Endian.little);
-      offset += 2;
-    }
-
-    // Bit 6: Instantaneous Power present
-    if ((flags & 0x0040) != 0 && offset + 2 <= value.length) {
-      instantPower = data.getInt16(offset, Endian.little);
-      offset += 2;
-    }
-
-    // Bit 7: Average Power present
-    if ((flags & 0x0080) != 0 && offset + 2 <= value.length) {
-      averagePower = data.getInt16(offset, Endian.little);
-      offset += 2;
-    }
-
-    // Bit 8: Expended Energy present
-    if ((flags & 0x0100) != 0 && offset + 2 <= value.length) {
-      totalEnergy = data.getUint16(offset, Endian.little);
-      offset += 2;
-      // Skip energy per hour and per minute
-      offset += 2; // Energy per hour
-      offset += 1; // Energy per minute
-    }
-
-    // Bit 9: Heart Rate present
-    if ((flags & 0x0200) != 0 && offset + 1 <= value.length) {
-      heartRate = value[offset];
-      offset += 1;
-    }
-
-    return BikeTelemetry(
-      instantPower: instantPower,
-      averagePower: averagePower,
-      instantCadence: instantCadence,
-      averageCadence: averageCadence,
-      instantSpeed: instantSpeed != null ? instantSpeed * 0.01 : null,
-      averageSpeed: averageSpeed != null ? averageSpeed * 0.01 : null,
-      heartRate: heartRate,
-      totalDistance: totalDistance,
-      totalEnergy: totalEnergy,
-      resistanceLevel: resistanceLevel,
-      timestamp: DateTime.now(),
+    _finish(
+      command,
+      FtmsResponse(
+        requestOpCode: value[1],
+        resultCode: value[2],
+        isSuccess: value[2] == FtmsConstants.resultSuccess,
+      ),
     );
   }
 
-  /// Request control of the fitness machine
+  // ---------------------------------------------------------------------------
+  // Commands
+  // ---------------------------------------------------------------------------
+
+  /// Requests control of the trainer (always sends the request).
   Future<bool> requestControl() async {
-    print('[FTMS] requestControl() called');
     final response = await _sendCommand([FtmsConstants.opCodeRequestControl]);
-    print('[FTMS] requestControl() response: ${response.isSuccess ? 'SUCCESS' : 'FAILED (code: ${response.resultCode})'}');
-    if (response.isSuccess) {
-      state = state.copyWith(hasControl: true);
-    } else {
-      print('[FTMS] WARNING: Failed to acquire control!');
-    }
+    if (mounted) state = state.copyWith(hasControl: response.isSuccess);
     return response.isSuccess;
   }
 
-  /// Start or resume the workout
-  Future<bool> start() async {
-    if (!state.hasControl) {
-      await requestControl();
-    }
-
-    final response = await _sendCommand([FtmsConstants.opCodeStartOrResume]);
-    if (response.isSuccess) {
-      state = state.copyWith(isStarted: true);
-    }
-    return response.isSuccess;
+  Future<FtmsResponse> start() async {
+    final response = await _sendControlled([FtmsConstants.opCodeStartOrResume]);
+    if (response.isSuccess && mounted) state = state.copyWith(isStarted: true);
+    return response;
   }
 
-  /// Stop the workout
-  Future<bool> stop() async {
-    final response = await _sendCommand([
-      FtmsConstants.opCodeStopOrPause,
-      FtmsConstants.stopValue,
-    ]);
-    if (response.isSuccess) {
-      state = state.copyWith(isStarted: false);
-    }
-    return response.isSuccess;
+  Future<FtmsResponse> stop() async {
+    final response = await _sendControlled(
+        [FtmsConstants.opCodeStopOrPause, FtmsConstants.stopValue]);
+    if (response.isSuccess && mounted) state = state.copyWith(isStarted: false);
+    return response;
   }
 
-  /// Pause the workout
-  Future<bool> pause() async {
-    final response = await _sendCommand([
-      FtmsConstants.opCodeStopOrPause,
-      FtmsConstants.pauseValue,
-    ]);
-    return response.isSuccess;
+  Future<FtmsResponse> pause() {
+    return _sendControlled(
+        [FtmsConstants.opCodeStopOrPause, FtmsConstants.pauseValue]);
   }
 
-  /// Set target resistance level (0-100)
-  Future<bool> setResistance(double level) async {
-    print('[FTMS] setResistance($level) called, hasControl: ${state.hasControl}');
-    if (!state.hasControl) {
-      print('[FTMS] No control, requesting control first...');
-      final acquired = await requestControl();
-      if (!acquired) {
-        print('[FTMS] Failed to acquire control, cannot set resistance');
-        return false;
-      }
+  /// Target resistance level (resolution 0.1).
+  ///
+  /// FTMS 1.0 defines this parameter as UINT8, but many trainers expect a
+  /// SINT16: the 2-byte form is sent first and the 1-byte form is used when
+  /// the trainer rejects it as an invalid parameter.
+  Future<FtmsResponse> setResistance(double level) async {
+    final raw = (level * 10).round();
+    var response = await _sendControlled(_resistanceCommand(raw));
+    if (!_resistanceAsUint8 &&
+        response.resultCode == FtmsConstants.resultInvalidParameter &&
+        raw >= 0 &&
+        raw <= 255) {
+      _log('resistance rejected as SINT16, retrying as UINT8');
+      _resistanceAsUint8 = true;
+      response = await _sendControlled(_resistanceCommand(raw));
     }
+    if (response.isSuccess && mounted) {
+      state = state.copyWith(currentResistance: level);
+    }
+    return response;
+  }
 
-    // Convert to SINT16 with 0.1 resolution
-    final value = (level * 10).round().clamp(-32768, 32767);
-    final bytes = [
+  List<int> _resistanceCommand(int raw) {
+    if (_resistanceAsUint8) {
+      return [FtmsConstants.opCodeSetTargetResistance, raw.clamp(0, 255)];
+    }
+    final value = raw.clamp(-32768, 32767);
+    return [
       FtmsConstants.opCodeSetTargetResistance,
       value & 0xFF,
       (value >> 8) & 0xFF,
     ];
-
-    final response = await _sendCommand(bytes);
-    print('[FTMS] setResistance() result: ${response.isSuccess ? 'SUCCESS' : 'FAILED'}');
-    if (response.isSuccess) {
-      state = state.copyWith(currentResistance: level);
-    }
-    return response.isSuccess;
   }
 
-  /// Set target power in watts (ERG mode)
-  Future<bool> setTargetPower(int watts) async {
-    final clamped = watts.clamp(0, 65535);
-    final bytes = [
+  /// Target power in watts (ERG mode).
+  Future<FtmsResponse> setTargetPower(int watts) async {
+    final range = state.powerRange;
+    var target = watts;
+    if (range != null && range.maximum > range.minimum) {
+      target = target.clamp(range.minimum, range.maximum);
+    }
+    target = target.clamp(0, 32767);
+    final response = await _sendControlled([
       FtmsConstants.opCodeSetTargetPower,
-      clamped & 0xFF,
-      (clamped >> 8) & 0xFF,
-    ];
-
-    final response = await _sendCommand(bytes);
-    if (response.isSuccess) {
-      state = state.copyWith(currentTargetPower: clamped);
+      target & 0xFF,
+      (target >> 8) & 0xFF,
+    ]);
+    if (response.isSuccess && mounted) {
+      state = state.copyWith(currentTargetPower: target);
     }
-    return response.isSuccess;
+    return response;
   }
 
-  /// Set simulation parameters (SIM mode)
-  Future<bool> setSimulationParams({
+  /// Indoor bike simulation parameters (SIM mode).
+  Future<FtmsResponse> setSimulationParams({
     double windSpeed = FtmsConstants.defaultWindSpeed,
     double grade = FtmsConstants.defaultGrade,
     double crr = FtmsConstants.defaultCrr,
     double cw = FtmsConstants.defaultCw,
   }) async {
-    // Wind speed: SINT16, resolution 0.001 m/s
     final windValue = (windSpeed * 1000).round().clamp(-32768, 32767);
-
-    // Grade: SINT16, resolution 0.01%
     final gradeValue = (grade * 100).round().clamp(-32768, 32767);
-
-    // CRR: UINT8, resolution 0.0001
     final crrValue = (crr * 10000).round().clamp(0, 255);
-
-    // CW: UINT8, resolution 0.01 kg/m
     final cwValue = (cw * 100).round().clamp(0, 255);
-
-    final bytes = [
+    final response = await _sendControlled([
       FtmsConstants.opCodeSetSimulationParams,
       windValue & 0xFF,
       (windValue >> 8) & 0xFF,
@@ -547,104 +522,133 @@ class FtmsControlNotifier extends StateNotifier<FtmsControlState> {
       (gradeValue >> 8) & 0xFF,
       crrValue,
       cwValue,
-    ];
-
-    final response = await _sendCommand(bytes);
-    if (response.isSuccess) {
+    ]);
+    if (response.isSuccess && mounted) {
       state = state.copyWith(currentGrade: grade);
     }
-    return response.isSuccess;
+    return response;
   }
 
-  /// Set grade (convenience method for SIM mode)
-  Future<bool> setGrade(double grade) async {
-    print('[FTMS] setGrade($grade) called, hasControl: ${state.hasControl}');
-    if (!state.hasControl) {
-      print('[FTMS] No control, requesting control first...');
-      final acquired = await requestControl();
-      if (!acquired) {
-        print('[FTMS] Failed to acquire control, cannot set grade');
-        return false;
-      }
-    }
-    final result = await setSimulationParams(grade: grade);
-    print('[FTMS] setGrade() result: ${result ? 'SUCCESS' : 'FAILED'}');
-    return result;
-  }
+  /// Grade in percent (SIM mode).
+  Future<FtmsResponse> setGrade(double grade) =>
+      setSimulationParams(grade: grade);
 
-  /// Reset the fitness machine
-  Future<bool> reset() async {
+  Future<FtmsResponse> reset() async {
     final response = await _sendCommand([FtmsConstants.opCodeReset]);
-    if (response.isSuccess) {
-      state = const FtmsControlState();
+    if (response.isSuccess && mounted) {
+      state = FtmsControlState(
+        isReady: state.isReady,
+        features: state.features,
+        resistanceRange: state.resistanceRange,
+        powerRange: state.powerRange,
+      );
     }
-    return response.isSuccess;
+    return response;
   }
 
-  Future<FtmsResponse> _sendCommand(List<int> command) async {
-    final ftmsCommand = _FtmsCommand(command);
-    _commandQueue.add(ftmsCommand);
+  /// Sends a command that requires control, requesting control first if
+  /// needed and once more if the trainer says control was lost.
+  Future<FtmsResponse> _sendControlled(List<int> command) async {
+    final control = await _ensureControl();
+    if (!control.isSuccess) return control;
+    var response = await _sendCommand(command);
+    if (response.resultCode == FtmsConstants.resultControlNotPermitted &&
+        response.failure == FtmsFailure.none) {
+      if (mounted) state = state.copyWith(hasControl: false);
+      final again = await _ensureControl();
+      if (!again.isSuccess) return again;
+      response = await _sendCommand(command);
+    }
+    return response;
+  }
+
+  Future<FtmsResponse> _ensureControl() {
+    if (state.hasControl) {
+      return Future.value(
+          const FtmsResponse.success(FtmsConstants.opCodeRequestControl));
+    }
+    // Concurrent commands share one control request.
+    return _controlRequest ??= () async {
+      try {
+        final response =
+            await _sendCommand([FtmsConstants.opCodeRequestControl]);
+        if (mounted) state = state.copyWith(hasControl: response.isSuccess);
+        return response;
+      } finally {
+        _controlRequest = null;
+      }
+    }();
+  }
+
+  Future<FtmsResponse> _sendCommand(List<int> bytes) async {
+    final ready = await _ready.future;
+    if (!ready || !mounted) {
+      return FtmsResponse.failed(bytes.first, FtmsFailure.notConnected);
+    }
+    final command = _FtmsCommand(bytes);
+    _queue.add(command);
     _processNextCommand();
-    return ftmsCommand.completer.future;
+    return command.completer.future;
   }
 
   void _processNextCommand() {
-    if (_isProcessingCommand || _commandQueue.isEmpty) return;
-    if (_controlPoint == null) {
-      print('[FTMS] ERROR: Control Point is NULL - cannot send commands!');
-      // Complete all pending commands with error
-      for (final cmd in _commandQueue) {
-        cmd.completer.complete(const FtmsResponse(
-          requestOpCode: 0,
-          resultCode: FtmsConstants.resultOperationFailed,
-          isSuccess: false,
-        ));
+    if (_current != null || _queue.isEmpty || !mounted) return;
+    final controlPoint = _controlPoint;
+    if (controlPoint == null) {
+      for (final command in _queue) {
+        command.complete(
+            FtmsResponse.failed(command.opCode, FtmsFailure.notConnected));
       }
-      _commandQueue.clear();
+      _queue.clear();
       return;
     }
 
-    _isProcessingCommand = true;
-    final command = _commandQueue.removeAt(0);
-    _currentCommandCompleter = command.completer;
-
-    final cmdHex = command.bytes.map((b) => '0x${b.toRadixString(16).padLeft(2, '0')}').join(' ');
-    print('[FTMS] Sending command: $cmdHex');
-
-    _controlPoint!.write(command.bytes, withoutResponse: false).then((_) {
-      print('[FTMS] Command written, waiting for response...');
-      // Wait for indication response (handled in _handleControlPointResponse)
-      // Timeout after 5 seconds
-      Future.delayed(const Duration(seconds: 5), () {
-        if (_currentCommandCompleter == command.completer) {
-          print('[FTMS] Command TIMEOUT after 5 seconds');
-          command.completer.complete(const FtmsResponse(
-            requestOpCode: 0,
-            resultCode: FtmsConstants.resultOperationFailed,
-            isSuccess: false,
-          ));
-          _currentCommandCompleter = null;
-          _isProcessingCommand = false;
-          _processNextCommand();
+    final command = _queue.removeAt(0);
+    _current = command;
+    _log('→ ${_hex(command.bytes)}');
+    controlPoint.write(command.bytes, withoutResponse: false).then(
+      (_) {
+        if (_current != command) return; // already answered
+        command.timer = Timer(_responseTimeout, () {
+          if (_current == command) {
+            _log('no response to 0x${command.opCode.toRadixString(16)}');
+            _finish(command,
+                FtmsResponse.failed(command.opCode, FtmsFailure.timeout));
+          }
+        });
+      },
+      onError: (Object e) {
+        _log('write error: $e');
+        if (_current == command) {
+          _finish(command,
+              FtmsResponse.failed(command.opCode, FtmsFailure.writeError));
         }
-      });
-    }).catchError((e) {
-      print('[FTMS] Command write ERROR: $e');
-      command.completer.complete(const FtmsResponse(
-        requestOpCode: 0,
-        resultCode: FtmsConstants.resultOperationFailed,
-        isSuccess: false,
-      ));
-      _isProcessingCommand = false;
-      _processNextCommand();
-    });
+      },
+    );
+  }
+
+  void _finish(_FtmsCommand command, FtmsResponse response) {
+    command.complete(response);
+    if (_current == command) _current = null;
+    _processNextCommand();
   }
 
   @override
   void dispose() {
-    _controlPointSubscription?.cancel();
-    _telemetrySubscription?.cancel();
-    _statusSubscription?.cancel();
+    _healthTimer?.cancel();
+    for (final subscription in _subscriptions) {
+      subscription.cancel();
+    }
+    _subscriptions.clear();
+    if (!_ready.isCompleted) _ready.complete(false);
+    // Nobody may wait forever for an answer that will never come.
+    final pending = [if (_current != null) _current!, ..._queue];
+    _current = null;
+    _queue.clear();
+    for (final command in pending) {
+      command.complete(
+          FtmsResponse.failed(command.opCode, FtmsFailure.notConnected));
+    }
     _telemetryController.close();
     super.dispose();
   }
@@ -652,18 +656,41 @@ class FtmsControlNotifier extends StateNotifier<FtmsControlState> {
 
 class _FtmsCommand {
   _FtmsCommand(this.bytes);
+
   final List<int> bytes;
-  final Completer<FtmsResponse> completer = Completer();
+  final completer = Completer<FtmsResponse>();
+  Timer? timer;
+
+  int get opCode => bytes.first;
+
+  void complete(FtmsResponse response) {
+    timer?.cancel();
+    if (!completer.isCompleted) completer.complete(response);
+  }
 }
+
+/// Why a command failed without an answer from the trainer.
+enum FtmsFailure { none, notConnected, timeout, writeError }
 
 class FtmsResponse {
   const FtmsResponse({
     required this.requestOpCode,
     required this.resultCode,
     required this.isSuccess,
+    this.failure = FtmsFailure.none,
   });
+
+  const FtmsResponse.success(this.requestOpCode)
+      : resultCode = FtmsConstants.resultSuccess,
+        isSuccess = true,
+        failure = FtmsFailure.none;
+
+  const FtmsResponse.failed(this.requestOpCode, this.failure)
+      : resultCode = FtmsConstants.resultOperationFailed,
+        isSuccess = false;
 
   final int requestOpCode;
   final int resultCode;
   final bool isSuccess;
+  final FtmsFailure failure;
 }

@@ -57,6 +57,13 @@ class UserSettingsNotifier extends StateNotifier<AsyncValue<UserSettings>> {
     }
   }
 
+  /// Remember the last connected trainer (for one-tap reconnection)
+  Future<void> updateLastDevice(String id, String name) async {
+    final current = state.valueOrNull ?? await UserSettings.load();
+    if (current.lastDeviceId == id && current.lastDeviceName == name) return;
+    await update(current.copyWith(lastDeviceId: id, lastDeviceName: name));
+  }
+
   /// Reload settings from storage
   Future<void> reload() => _load();
 }

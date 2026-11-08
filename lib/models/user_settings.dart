@@ -10,6 +10,7 @@ class UserSettings extends Equatable {
     this.keepScreenOn = true,
     this.defaultMode = 'sim',
     this.lastDeviceId,
+    this.lastDeviceName,
     this.userName,
   });
 
@@ -19,6 +20,7 @@ class UserSettings extends Equatable {
   final bool keepScreenOn; // Prevent screen timeout during rides
   final String defaultMode; // 'sim' or 'erg'
   final String? lastDeviceId; // Auto-connect to last device
+  final String? lastDeviceName; // Shown before reconnecting
   final String? userName;
 
   // SharedPreferences keys
@@ -28,6 +30,7 @@ class UserSettings extends Equatable {
   static const _keyKeepScreenOn = 'keepScreenOn';
   static const _keyDefaultMode = 'defaultMode';
   static const _keyLastDeviceId = 'lastDeviceId';
+  static const _keyLastDeviceName = 'lastDeviceName';
   static const _keyUserName = 'userName';
 
   /// Load settings from SharedPreferences
@@ -40,6 +43,7 @@ class UserSettings extends Equatable {
       keepScreenOn: prefs.getBool(_keyKeepScreenOn) ?? true,
       defaultMode: prefs.getString(_keyDefaultMode) ?? 'sim',
       lastDeviceId: prefs.getString(_keyLastDeviceId),
+      lastDeviceName: prefs.getString(_keyLastDeviceName),
       userName: prefs.getString(_keyUserName),
     );
   }
@@ -57,6 +61,11 @@ class UserSettings extends Equatable {
     } else {
       await prefs.remove(_keyLastDeviceId);
     }
+    if (lastDeviceName != null) {
+      await prefs.setString(_keyLastDeviceName, lastDeviceName!);
+    } else {
+      await prefs.remove(_keyLastDeviceName);
+    }
     if (userName != null) {
       await prefs.setString(_keyUserName, userName!);
     } else {
@@ -71,6 +80,7 @@ class UserSettings extends Equatable {
     bool? keepScreenOn,
     String? defaultMode,
     String? lastDeviceId,
+    String? lastDeviceName,
     String? userName,
   }) {
     return UserSettings(
@@ -80,6 +90,7 @@ class UserSettings extends Equatable {
       keepScreenOn: keepScreenOn ?? this.keepScreenOn,
       defaultMode: defaultMode ?? this.defaultMode,
       lastDeviceId: lastDeviceId ?? this.lastDeviceId,
+      lastDeviceName: lastDeviceName ?? this.lastDeviceName,
       userName: userName ?? this.userName,
     );
   }
@@ -92,6 +103,7 @@ class UserSettings extends Equatable {
         keepScreenOn,
         defaultMode,
         lastDeviceId,
+        lastDeviceName,
         userName,
       ];
 }
