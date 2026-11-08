@@ -1,4 +1,5 @@
 /// Configuration pour le generateur d'illustrations
+library;
 
 /// Animaux disponibles pour l'illustration
 const List<Map<String, String>> illustrationAnimals = [
@@ -35,5 +36,7 @@ class IllustrationPrefsKeys {
   static const String animal = 'illustration_pref_animal';
   static const String style = 'illustration_pref_style';
   static const String blackAndWhite = 'illustration_pref_bw';
-  static const String geminiApiKey = 'gemini_api_key';
+  /// Where older versions stored the Gemini key in clear (migrated, see
+  /// GeminiKeyStorage).
+  static const String legacyGeminiApiKey = 'gemini_api_key';
 }

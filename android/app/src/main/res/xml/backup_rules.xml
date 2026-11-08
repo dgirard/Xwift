@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Auto backup up to Android 11: rides and settings are backed up, but not the
+     encrypted storage (Strava tokens, API keys). Its encryption key never
+     leaves the device, so a restored copy cannot be read and makes the
+     secure storage plugin fail. -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
+</full-backup-content>

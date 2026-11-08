@@ -1,6 +1,6 @@
 import 'dart:io';
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +15,7 @@ import '../core/theme/app_colors.dart';
 import '../features/export/fit_exporter.dart';
 import '../features/export/tcx_exporter.dart';
 import '../features/illustration/gemini_image_service.dart';
+import '../features/illustration/gemini_key_storage.dart';
 import '../features/illustration/illustration_config.dart';
 import '../features/illustration/illustration_prompt_builder.dart';
 import '../features/illustration/illustration_storage.dart';
@@ -156,6 +157,8 @@ class ExportScreen extends ConsumerWidget {
   }
 
   Future<void> _deleteRide(BuildContext context, WidgetRef ref, RideSummary ride) async {
+    // Captured before any await: still valid if the screen is closed meanwhile.
+    final container = ProviderScope.containerOf(context, listen: false);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -176,13 +179,16 @@ class ExportScreen extends ConsumerWidget {
     );
 
     if (confirmed == true) {
-      await ref.read(rideRepositoryProvider).deleteRide(ride.id);
-      ref.invalidate(rideHistoryProvider);
-      ref.invalidate(rideStatsProvider);
+      await container.read(rideRepositoryProvider).deleteRide(ride.id);
+      await IllustrationStorage.delete(ride.id);
+      container.invalidate(rideHistoryProvider);
+      container.invalidate(rideStatsProvider);
     }
   }
 
   Future<void> _editRideName(BuildContext context, WidgetRef ref, RideSummary ride) async {
+    // Captured before any await: still valid if the screen is closed meanwhile.
+    final container = ProviderScope.containerOf(context, listen: false);
     final controller = TextEditingController(text: ride.displayName);
 
     final newName = await showDialog<String>(
@@ -214,14 +220,17 @@ class ExportScreen extends ConsumerWidget {
     controller.dispose();
 
     if (newName != null && newName.isNotEmpty) {
-      await ref.read(rideRepositoryProvider).updateRideName(ride.id, newName);
-      ref.invalidate(rideHistoryProvider);
+      await container.read(rideRepositoryProvider).updateRideName(ride.id, newName);
+      container.invalidate(rideHistoryProvider);
     }
   }
 
   Future<void> _uploadToStrava(BuildContext context, WidgetRef ref, RideSummary ride) async {
+    // Captured before any await: still valid if the screen is closed meanwhile.
+    final messenger = ScaffoldMessenger.of(context);
+    final container = ProviderScope.containerOf(context, listen: false);
     // Show loading
-    ScaffoldMessenger.of(context).showSnackBar(
+    messenger.showSnackBar(
       SnackBar(
         content: Row(
           children: [
@@ -241,20 +250,20 @@ class ExportScreen extends ConsumerWidget {
 
     try {
       // Load full session
-      final session = await ref.read(rideRepositoryProvider).loadRideWithSamples(ride.id);
+      final session = await container.read(rideRepositoryProvider).loadRideWithSamples(ride.id);
       if (session == null) {
         throw Exception('Session introuvable');
       }
 
       // Upload
-      await ref.read(stravaUploadProvider.notifier).uploadActivity(
+      await container.read(stravaUploadProvider.notifier).uploadActivity(
         session,
         name: ride.displayName,
       );
 
-      final uploadState = ref.read(stravaUploadProvider);
+      final uploadState = container.read(stravaUploadProvider);
 
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      messenger.hideCurrentSnackBar();
 
       if (uploadState.status == StravaUploadStatus.success) {
         // Verifier si une illustration existe
@@ -269,7 +278,7 @@ class ExportScreen extends ConsumerWidget {
             uploadState.activityId,
           );
         } else if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          messenger.showSnackBar(
             SnackBar(
               content: const Text('Activite envoyee vers Strava!'),
               backgroundColor: Colors.green,
@@ -290,7 +299,7 @@ class ExportScreen extends ConsumerWidget {
           );
         }
       } else if (uploadState.status == StravaUploadStatus.duplicate) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: const Text('Activite deja presente sur Strava'),
             backgroundColor: Colors.orange,
@@ -301,8 +310,8 @@ class ExportScreen extends ConsumerWidget {
         throw Exception(uploadState.error ?? 'Erreur inconnue');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
         SnackBar(
           content: Text('Erreur: $e'),
           backgroundColor: AppColors.error,
@@ -311,7 +320,7 @@ class ExportScreen extends ConsumerWidget {
       );
     }
 
-    ref.read(stravaUploadProvider.notifier).reset();
+    container.read(stravaUploadProvider.notifier).reset();
   }
 
   /// Propose de partager l'illustration apres upload Strava
@@ -394,7 +403,10 @@ class ExportScreen extends ConsumerWidget {
   }
 
   Future<void> _shareFile(BuildContext context, WidgetRef ref, RideSummary ride, String format) async {
-    ScaffoldMessenger.of(context).showSnackBar(
+    // Captured before any await: still valid if the screen is closed meanwhile.
+    final messenger = ScaffoldMessenger.of(context);
+    final container = ProviderScope.containerOf(context, listen: false);
+    messenger.showSnackBar(
       SnackBar(
         content: Row(
           children: [
@@ -413,10 +425,10 @@ class ExportScreen extends ConsumerWidget {
     );
 
     try {
-      final session = await ref.read(rideRepositoryProvider).loadRideWithSamples(ride.id);
+      final session = await container.read(rideRepositoryProvider).loadRideWithSamples(ride.id);
       if (session == null) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.hideCurrentSnackBar();
+        messenger.showSnackBar(
           SnackBar(
             content: const Text('Erreur: session introuvable'),
             backgroundColor: AppColors.error,
@@ -433,7 +445,7 @@ class ExportScreen extends ConsumerWidget {
         filePath = await TcxExporter.export(session);
       }
 
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      messenger.hideCurrentSnackBar();
 
       final result = await Share.shareXFiles(
         [XFile(filePath)],
@@ -441,7 +453,7 @@ class ExportScreen extends ConsumerWidget {
       );
 
       if (result.status == ShareResultStatus.success) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: Text('Fichier $format partage avec succes'),
             behavior: SnackBarBehavior.floating,
@@ -449,8 +461,8 @@ class ExportScreen extends ConsumerWidget {
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
         SnackBar(
           content: Text('Erreur: $e'),
           backgroundColor: AppColors.error,
@@ -466,14 +478,15 @@ class ExportScreen extends ConsumerWidget {
     WidgetRef ref,
     RideSummary ride,
   ) async {
-    final prefs = await SharedPreferences.getInstance();
-
     // Verifier si l'API key Gemini est configuree
-    final apiKey = prefs.getString(IllustrationPrefsKeys.geminiApiKey);
+    final keyStorage = GeminiKeyStorage();
+    final apiKey = await keyStorage.read();
     if (apiKey == null || apiKey.isEmpty) {
-      final configured = await _showGeminiApiKeyDialog(context, prefs);
+      if (!context.mounted) return;
+      final configured = await _showGeminiApiKeyDialog(context, keyStorage);
       if (!configured) return;
     }
+    final prefs = await SharedPreferences.getInstance();
 
     // Charger les preferences
     String selectedAnimal = prefs.getString(IllustrationPrefsKeys.animal) ?? 'hedgehog';
@@ -497,13 +510,11 @@ class ExportScreen extends ConsumerWidget {
                 // Selection de l'animal
                 const Text('Personnage', style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
-                ...illustrationAnimals.map((animal) => RadioListTile<String>(
-                  title: Text(animal['name']!),
-                  subtitle: Text(animal['desc']!, style: const TextStyle(fontSize: 12)),
-                  value: animal['id']!,
-                  groupValue: selectedAnimal,
-                  dense: true,
-                  onChanged: (v) => setDialogState(() => selectedAnimal = v!),
+                ...illustrationAnimals.map((animal) => _ChoiceTile(
+                  title: animal['name']!,
+                  subtitle: animal['desc']!,
+                  selected: selectedAnimal == animal['id'],
+                  onTap: () => setDialogState(() => selectedAnimal = animal['id']!),
                 )),
 
                 const SizedBox(height: 16),
@@ -511,16 +522,15 @@ class ExportScreen extends ConsumerWidget {
                 // Style visuel
                 const Text('Style', style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
-                ...IllustrationStyle.values.map((style) => RadioListTile<IllustrationStyle>(
-                  title: Text(style.displayName),
-                  subtitle: Text(style.description, style: const TextStyle(fontSize: 12)),
-                  value: style,
-                  groupValue: selectedStyle,
-                  dense: true,
-                  onChanged: (v) => setDialogState(() {
-                    selectedStyle = v!;
+                ...IllustrationStyle.values.map((style) => _ChoiceTile(
+                  title: style.displayName,
+                  subtitle: style.description,
+                  selected: selectedStyle == style,
+                  onTap: () => setDialogState(() {
+                    selectedStyle = style;
                     // Manga et Print sont souvent en N&B
-                    if (v == IllustrationStyle.manga || v == IllustrationStyle.print) {
+                    if (style == IllustrationStyle.manga ||
+                        style == IllustrationStyle.print) {
                       useBlackAndWhite = true;
                     }
                   }),
@@ -565,11 +575,15 @@ class ExportScreen extends ConsumerWidget {
     await prefs.setBool(IllustrationPrefsKeys.blackAndWhite, result['blackAndWhite'] as bool);
 
     // Generer l'illustration
+    if (!context.mounted) return;
     await _generateIllustration(context, ref, ride, result);
   }
 
   /// Dialogue pour configurer la cle API Gemini
-  Future<bool> _showGeminiApiKeyDialog(BuildContext context, SharedPreferences prefs) async {
+  Future<bool> _showGeminiApiKeyDialog(
+    BuildContext context,
+    GeminiKeyStorage keyStorage,
+  ) async {
     final controller = TextEditingController();
 
     final apiKey = await showDialog<String>(
@@ -615,7 +629,7 @@ class ExportScreen extends ConsumerWidget {
     controller.dispose();
 
     if (apiKey != null && apiKey.isNotEmpty) {
-      await prefs.setString(IllustrationPrefsKeys.geminiApiKey, apiKey);
+      await keyStorage.write(apiKey);
       return true;
     }
     return false;
@@ -628,8 +642,11 @@ class ExportScreen extends ConsumerWidget {
     RideSummary ride,
     Map<String, dynamic> config,
   ) async {
+    // Captured before any await: still valid if the screen is closed meanwhile.
+    final messenger = ScaffoldMessenger.of(context);
+    final container = ProviderScope.containerOf(context, listen: false);
     // Show loading
-    ScaffoldMessenger.of(context).showSnackBar(
+    messenger.showSnackBar(
       SnackBar(
         content: Row(
           children: [
@@ -649,7 +666,7 @@ class ExportScreen extends ConsumerWidget {
 
     try {
       // Charger la session complete
-      final session = await ref.read(rideRepositoryProvider).loadRideWithSamples(ride.id);
+      final session = await container.read(rideRepositoryProvider).loadRideWithSamples(ride.id);
       if (session == null) {
         throw Exception('Session introuvable');
       }
@@ -662,15 +679,15 @@ class ExportScreen extends ConsumerWidget {
         blackAndWhite: config['blackAndWhite'] as bool,
       );
 
-      print('[ILLUSTRATION] Prompt: $prompt');
+      if (kDebugMode) debugPrint('[ILLUSTRATION] Prompt: $prompt');
 
       // Generer l'image
-      final prefs = await SharedPreferences.getInstance();
-      final apiKey = prefs.getString(IllustrationPrefsKeys.geminiApiKey)!;
+      final apiKey = await GeminiKeyStorage().read();
+      if (apiKey == null) throw Exception('Clé API Gemini non configurée');
       final service = GeminiImageService(apiKey: apiKey);
       final imageBytes = await service.generateImage(prompt);
 
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      messenger.hideCurrentSnackBar();
 
       if (imageBytes == null) {
         throw Exception('Aucune image generee');
@@ -687,11 +704,11 @@ class ExportScreen extends ConsumerWidget {
       );
 
       // Rafraichir la liste pour afficher la miniature
-      ref.invalidate(rideHistoryProvider);
+      container.invalidate(rideHistoryProvider);
 
       // Afficher notification de sauvegarde
       if (downloadPath != null && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: Text('Image sauvegardee dans Download'),
             behavior: SnackBarBehavior.floating,
@@ -710,9 +727,9 @@ class ExportScreen extends ConsumerWidget {
         onRegenerate: () => _showIllustrationDialog(context, ref, ride),
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      messenger.hideCurrentSnackBar();
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: Text('Erreur: $e'),
             backgroundColor: AppColors.error,
@@ -900,7 +917,7 @@ class _StravaBanner extends ConsumerWidget {
                       clientId,
                       clientSecret,
                     );
-                Navigator.pop(ctx);
+                if (ctx.mounted) Navigator.pop(ctx);
               }
             },
             child: const Text('Enregistrer'),
@@ -948,8 +965,9 @@ class _RideTileState extends State<_RideTile> {
   @override
   void didUpdateWidget(_RideTile oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Toujours recharger l'illustration (peut avoir ete regeneree)
-    _loadIllustration();
+    // The history is reloaded after a (re)generation: new ride objects.
+    // Other rebuilds (Strava state…) keep the same ones and the same image.
+    if (!identical(oldWidget.ride, widget.ride)) _loadIllustration();
   }
 
   Future<void> _loadIllustration() async {
@@ -1009,7 +1027,11 @@ class _RideTileState extends State<_RideTile> {
                     borderRadius: BorderRadius.circular(8),
                     image: _illustrationBytes != null
                         ? DecorationImage(
-                            image: MemoryImage(_illustrationBytes!),
+                            // 48 dp thumbnail: no need to decode the full image.
+                            image: ResizeImage(
+                              MemoryImage(_illustrationBytes!),
+                              width: 160,
+                            ),
                             fit: BoxFit.cover,
                           )
                         : null,
@@ -1214,6 +1236,37 @@ class _StatChip extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// One option of a single-choice list (radio-like, without the deprecated
+/// Radio group API).
+class _ChoiceTile extends StatelessWidget {
+  const _ChoiceTile({
+    required this.title,
+    required this.subtitle,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      dense: true,
+      selected: selected,
+      onTap: onTap,
+      leading: Icon(
+        selected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+        color: selected ? AppColors.primary : AppColors.textSecondary,
+      ),
+      title: Text(title),
+      subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
     );
   }
 }
