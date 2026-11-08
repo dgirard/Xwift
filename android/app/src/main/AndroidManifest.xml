@@ -17,6 +17,11 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"
         android:maxSdkVersion="30" />
 
+    <!-- Saving illustrations to Download: Android 9 and below only
+         (Android 10+ uses MediaStore without permission) -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+
     <!-- Keep screen on during rides -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 

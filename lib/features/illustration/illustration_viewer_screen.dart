@@ -7,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../core/theme/app_colors.dart';
 import 'illustration_storage.dart';
+import 'image_format.dart';
 
 /// Full screen illustration viewer with zoom, save, share and regenerate
 class IllustrationViewerScreen extends StatefulWidget {
@@ -83,7 +84,8 @@ class _IllustrationViewerScreenState extends State<IllustrationViewerScreen> {
           // Fallback vers documents si Download non accessible
           final directory = await getApplicationDocumentsDirectory();
           final timestamp = DateTime.now().millisecondsSinceEpoch;
-          final file = File('${directory.path}/illustration_$timestamp.png');
+          final file = File('${directory.path}/illustration_$timestamp.'
+              '${imageFileExtension(widget.imageBytes)}');
           await file.writeAsBytes(widget.imageBytes);
           messenger.showSnackBar(
             SnackBar(
@@ -110,7 +112,8 @@ class _IllustrationViewerScreenState extends State<IllustrationViewerScreen> {
     try {
       final directory = await getTemporaryDirectory();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final file = File('${directory.path}/illustration_$timestamp.png');
+      final file = File('${directory.path}/illustration_$timestamp.'
+          '${imageFileExtension(widget.imageBytes)}');
       await file.writeAsBytes(widget.imageBytes);
 
       await Share.shareXFiles(

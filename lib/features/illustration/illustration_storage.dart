@@ -1,8 +1,10 @@
 import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 
-import 'media_scanner.dart';
+import 'android_media_store.dart';
+import 'image_format.dart';
 import 'package:flutter/foundation.dart';
 
 /// Service pour sauvegarder et charger les illustrations par ride ID
@@ -17,22 +19,6 @@ class IllustrationStorage {
       await folder.create(recursive: true);
     }
     return folder;
-  }
-
-  /// Retourne le dossier Download du telephone
-  static Future<Directory?> _getDownloadFolder() async {
-    if (Platform.isAndroid) {
-      final directory = await getExternalStorageDirectory();
-      if (directory != null) {
-        // Navigate to Download folder: /storage/emulated/0/Download
-        final downloadDir = Directory('${directory.parent.parent.parent.parent.path}/Download');
-        if (await downloadDir.exists()) {
-          return downloadDir;
-        }
-      }
-    }
-    // Fallback pour autres plateformes
-    return await getDownloadsDirectory();
   }
 
   /// Retourne le chemin du fichier pour un ride ID
@@ -82,36 +68,47 @@ class IllustrationStorage {
     return null;
   }
 
-  /// Sauvegarde l'illustration dans le dossier Download du telephone
-  /// Retourne le chemin du fichier sauvegarde ou null en cas d'erreur
-  static Future<String?> saveToDownloads(String rideId, Uint8List imageBytes, String sessionName) async {
-    try {
-      final downloadDir = await _getDownloadFolder();
-      _log('[ILLUSTRATION_STORAGE] Download dir: ${downloadDir?.path}');
-      if (downloadDir == null) {
-        _log('[ILLUSTRATION_STORAGE] Download dir is null!');
+  /// Sauvegarde l'illustration dans le dossier Download du telephone.
+  /// Retourne l'emplacement du fichier, ou null en cas d'echec.
+  static Future<String?> saveToDownloads(
+    String rideId,
+    Uint8List imageBytes,
+    String sessionName,
+  ) async {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final safeName =
+        sessionName.replaceAll(RegExp(r'[^\w\s-]'), '').replaceAll(' ', '_');
+    final fileName =
+        'Xwift_${safeName}_$timestamp.${imageFileExtension(imageBytes)}';
+
+    if (!Platform.isAndroid) {
+      try {
+        final directory = await getDownloadsDirectory();
+        if (directory == null) return null;
+        final file = File('${directory.path}/$fileName');
+        await file.writeAsBytes(imageBytes);
+        return file.path;
+      } catch (e) {
+        _log('[ILLUSTRATION_STORAGE] Error saving to downloads: $e');
         return null;
       }
-
-      // Generer un nom de fichier lisible
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final safeName = sessionName.replaceAll(RegExp(r'[^\w\s-]'), '').replaceAll(' ', '_');
-      final fileName = 'Xwift_${safeName}_$timestamp.png';
-      final filePath = '${downloadDir.path}/$fileName';
-
-      _log('[ILLUSTRATION_STORAGE] Saving to: $filePath');
-      final file = File(filePath);
-      await file.writeAsBytes(imageBytes);
-      _log('[ILLUSTRATION_STORAGE] Saved ${imageBytes.length} bytes');
-
-      // Declencher un scan media pour rendre le fichier visible dans la galerie
-      await MediaScanner.scanFile(filePath);
-
-      return filePath;
-    } catch (e) {
-      _log('[ILLUSTRATION_STORAGE] Error saving to downloads: $e');
-      return null;
     }
+
+    // Android 9 and below: writing to Download needs the storage permission
+    // (Android 10+ goes through MediaStore, without permission).
+    final sdk = await AndroidMediaStore.sdkInt();
+    if (sdk != null && sdk < 29) {
+      final status = await Permission.storage.request();
+      if (!status.isGranted) {
+        _log('[ILLUSTRATION_STORAGE] Storage permission denied');
+        return null;
+      }
+    }
+    return AndroidMediaStore.saveToDownloads(
+      imageBytes,
+      fileName: fileName,
+      mimeType: imageMimeType(imageBytes),
+    );
   }
 }
 
