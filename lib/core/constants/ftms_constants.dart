@@ -83,21 +83,3 @@ enum PowerZone {
     return PowerZone.anaerobic;
   }
 }
-
-/// Virtual gear ratios for Zwift-style shifting
-class VirtualGearing {
-  VirtualGearing._();
-
-  static const int defaultTotalGears = 22;
-  static const int defaultStartGear = 11;
-
-  /// Grade adjustment per gear (in percentage points)
-  static const double gradePerGear = 0.5;
-
-  /// Calculate grade from gear position
-  /// Gear 1 = easiest (uphill), Gear 22 = hardest (downhill)
-  static double gradeFromGear(int gear, {int totalGears = defaultTotalGears}) {
-    final midGear = totalGears ~/ 2;
-    return (midGear - gear) * gradePerGear;
-  }
-}

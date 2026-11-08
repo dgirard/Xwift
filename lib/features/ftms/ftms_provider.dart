@@ -402,8 +402,9 @@ class FtmsControlNotifier extends StateNotifier<FtmsControlState> {
 
   void _handleControlPointResponse(List<int> value) {
     _log('control point response: ${_hex(value)}');
-    if (value.length < 3 || value[0] != FtmsConstants.opCodeResponseCode)
+    if (value.length < 3 || value[0] != FtmsConstants.opCodeResponseCode) {
       return;
+    }
     final command = _current;
     if (command == null || command.opCode != value[1]) {
       // Late answer to a command that already timed out: must not be taken as

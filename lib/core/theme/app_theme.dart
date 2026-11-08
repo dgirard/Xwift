@@ -80,7 +80,7 @@ class AppTheme {
         activeTrackColor: AppColors.primary,
         inactiveTrackColor: AppColors.surfaceLight,
         thumbColor: AppColors.primary,
-        overlayColor: AppColors.primary.withOpacity(0.2),
+        overlayColor: AppColors.primary.withValues(alpha: 0.2),
         trackHeight: 8,
         thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12),
       ),
@@ -93,7 +93,7 @@ class AppTheme {
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return AppColors.primary.withOpacity(0.5);
+            return AppColors.primary.withValues(alpha: 0.5);
           }
           return AppColors.surfaceLight;
         }),

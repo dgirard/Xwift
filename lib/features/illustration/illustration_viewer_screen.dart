@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -63,6 +62,7 @@ class _IllustrationViewerScreenState extends State<IllustrationViewerScreen> {
   }
 
   Future<void> _saveImage() async {
+    final messenger = ScaffoldMessenger.of(context);
     try {
       // Sauvegarder dans le dossier Download du telephone
       final downloadPath = await IllustrationStorage.saveToDownloads(
@@ -73,7 +73,7 @@ class _IllustrationViewerScreenState extends State<IllustrationViewerScreen> {
 
       if (mounted) {
         if (downloadPath != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          messenger.showSnackBar(
             SnackBar(
               content: const Text('Image sauvegardee dans Download'),
               behavior: SnackBarBehavior.floating,
@@ -85,7 +85,7 @@ class _IllustrationViewerScreenState extends State<IllustrationViewerScreen> {
           final timestamp = DateTime.now().millisecondsSinceEpoch;
           final file = File('${directory.path}/illustration_$timestamp.png');
           await file.writeAsBytes(widget.imageBytes);
-          ScaffoldMessenger.of(context).showSnackBar(
+          messenger.showSnackBar(
             SnackBar(
               content: Text('Image sauvegardee: ${file.path}'),
               behavior: SnackBarBehavior.floating,
@@ -95,7 +95,7 @@ class _IllustrationViewerScreenState extends State<IllustrationViewerScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: Text('Erreur: $e'),
             backgroundColor: AppColors.error,

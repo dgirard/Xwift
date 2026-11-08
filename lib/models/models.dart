@@ -1,4 +1,6 @@
 /// Barrel file for all models
+library;
+
 export 'bike_telemetry.dart';
 export 'ftms_device.dart';
 export 'ride_session.dart';

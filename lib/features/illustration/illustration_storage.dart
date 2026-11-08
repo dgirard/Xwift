@@ -1,9 +1,9 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:path_provider/path_provider.dart';
 
 import 'media_scanner.dart';
+import 'package:flutter/foundation.dart';
 
 /// Service pour sauvegarder et charger les illustrations par ride ID
 class IllustrationStorage {
@@ -87,9 +87,9 @@ class IllustrationStorage {
   static Future<String?> saveToDownloads(String rideId, Uint8List imageBytes, String sessionName) async {
     try {
       final downloadDir = await _getDownloadFolder();
-      print('[ILLUSTRATION_STORAGE] Download dir: ${downloadDir?.path}');
+      _log('[ILLUSTRATION_STORAGE] Download dir: ${downloadDir?.path}');
       if (downloadDir == null) {
-        print('[ILLUSTRATION_STORAGE] Download dir is null!');
+        _log('[ILLUSTRATION_STORAGE] Download dir is null!');
         return null;
       }
 
@@ -99,18 +99,22 @@ class IllustrationStorage {
       final fileName = 'Xwift_${safeName}_$timestamp.png';
       final filePath = '${downloadDir.path}/$fileName';
 
-      print('[ILLUSTRATION_STORAGE] Saving to: $filePath');
+      _log('[ILLUSTRATION_STORAGE] Saving to: $filePath');
       final file = File(filePath);
       await file.writeAsBytes(imageBytes);
-      print('[ILLUSTRATION_STORAGE] Saved ${imageBytes.length} bytes');
+      _log('[ILLUSTRATION_STORAGE] Saved ${imageBytes.length} bytes');
 
       // Declencher un scan media pour rendre le fichier visible dans la galerie
       await MediaScanner.scanFile(filePath);
 
       return filePath;
     } catch (e) {
-      print('[ILLUSTRATION_STORAGE] Error saving to downloads: $e');
+      _log('[ILLUSTRATION_STORAGE] Error saving to downloads: $e');
       return null;
     }
   }
+}
+
+void _log(String message) {
+  if (kDebugMode) debugPrint(message);
 }

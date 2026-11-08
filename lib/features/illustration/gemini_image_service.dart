@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
 
 /// Service pour generer des images avec l'API Gemini
 class GeminiImageService {
@@ -42,7 +42,7 @@ class GeminiImageService {
           .timeout(const Duration(seconds: 90));
 
       if (response.statusCode != 200) {
-        print('[GEMINI_IMAGE] Error: ${response.statusCode} - ${response.body}');
+        _log('[GEMINI_IMAGE] Error: ${response.statusCode} - ${response.body}');
         throw GeminiImageException(
           'Erreur API Gemini: ${response.statusCode}',
           response.body,
@@ -68,11 +68,11 @@ class GeminiImageService {
       }
 
       // Pas d'image dans la reponse
-      print('[GEMINI_IMAGE] No image in response');
+      _log('[GEMINI_IMAGE] No image in response');
       return null;
     } catch (e) {
       if (e is GeminiImageException) rethrow;
-      print('[GEMINI_IMAGE] Error: $e');
+      _log('[GEMINI_IMAGE] Error: $e');
       throw GeminiImageException('Erreur de generation: $e', null);
     }
   }
@@ -87,4 +87,8 @@ class GeminiImageException implements Exception {
 
   @override
   String toString() => message;
+}
+
+void _log(String message) {
+  if (kDebugMode) debugPrint(message);
 }

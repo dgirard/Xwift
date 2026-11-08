@@ -28,13 +28,10 @@ class WorkoutPlan extends Equatable {
 
   /// Total work in kilojoules (estimated)
   int get estimatedKJ {
-    int totalSeconds = 0;
     int totalWattSeconds = 0;
 
     for (final interval in intervals) {
-      final seconds = interval.duration.inSeconds;
-      totalSeconds += seconds;
-      totalWattSeconds += seconds * interval.targetPower;
+      totalWattSeconds += interval.duration.inSeconds * interval.targetPower;
     }
 
     return totalWattSeconds ~/ 1000; // kJ
