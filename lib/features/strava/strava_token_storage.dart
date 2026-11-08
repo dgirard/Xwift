@@ -4,11 +4,13 @@ import 'strava_config.dart';
 /// Secure storage for Strava OAuth tokens
 class StravaTokenStorage {
   final FlutterSecureStorage _storage;
+  final DateTime Function() _clock;
 
-  StravaTokenStorage({FlutterSecureStorage? storage})
+  StravaTokenStorage({FlutterSecureStorage? storage, DateTime Function()? clock})
       : _storage = storage ?? const FlutterSecureStorage(
           aOptions: AndroidOptions(encryptedSharedPreferences: true),
-        );
+        ),
+        _clock = clock ?? DateTime.now;
 
   /// Save Strava tokens securely
   Future<void> saveTokens(StravaTokens tokens) async {
@@ -104,6 +106,35 @@ class StravaTokenStorage {
         creds.clientId!.isNotEmpty &&
         creds.clientSecret != null &&
         creds.clientSecret!.isNotEmpty;
+  }
+
+  /// Remembers the OAuth state sent to Strava until the callback comes back.
+  /// Kept on disk: the app may be killed while the browser is open.
+  Future<void> savePendingOAuthState(String state) async {
+    await _storage.write(key: StravaConfig.oauthStateKey, value: state);
+    await _storage.write(
+      key: StravaConfig.oauthStateCreatedAtKey,
+      value: _clock().toIso8601String(),
+    );
+  }
+
+  /// The OAuth state awaiting its callback, or null (none, or expired).
+  Future<String?> readPendingOAuthState() async {
+    final state = await _storage.read(key: StravaConfig.oauthStateKey);
+    final createdAt = DateTime.tryParse(
+      await _storage.read(key: StravaConfig.oauthStateCreatedAtKey) ?? '',
+    );
+    if (state == null || createdAt == null) return null;
+    if (_clock().difference(createdAt) > StravaConfig.oauthStateLifetime) {
+      return null;
+    }
+    return state;
+  }
+
+  /// Forgets the OAuth state (it is valid for one callback only).
+  Future<void> clearPendingOAuthState() async {
+    await _storage.delete(key: StravaConfig.oauthStateKey);
+    await _storage.delete(key: StravaConfig.oauthStateCreatedAtKey);
   }
 
   /// Clear credentials

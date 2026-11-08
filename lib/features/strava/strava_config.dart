@@ -21,11 +21,16 @@ class StravaConfig {
   /// Full callback URL - uses localhost which is whitelisted by Strava
   static const String callbackUrl = '$callbackScheme://$callbackHost/callback';
 
-  /// Required OAuth scopes for Xwift
-  /// - activity:write: Upload activities
-  /// - activity:read_all: Read activities to detect duplicates
-  /// - profile:read_all: Read user profile info
-  static const String scopes = 'activity:write,activity:read_all,profile:read_all';
+  /// OAuth scopes: only what Xwift uses.
+  /// - read: public profile (name and avatar shown once connected)
+  /// - activity:write: upload activities and follow their processing
+  /// Duplicates are reported by the upload itself: no need to read the
+  /// athlete's private activities (activity:read_all) or private profile
+  /// (profile:read_all).
+  static const String scopes = 'read,activity:write';
+
+  /// How long an authorization started from the app stays valid.
+  static const Duration oauthStateLifetime = Duration(minutes: 15);
 
   /// Secure storage keys
   static const String accessTokenKey = 'strava_access_token';
@@ -36,6 +41,8 @@ class StravaConfig {
   static const String athleteAvatarKey = 'strava_athlete_avatar';
   static const String clientIdKey = 'strava_client_id';
   static const String clientSecretKey = 'strava_client_secret';
+  static const String oauthStateKey = 'strava_oauth_state';
+  static const String oauthStateCreatedAtKey = 'strava_oauth_state_created_at';
 }
 
 /// Strava athlete information

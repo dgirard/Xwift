@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
@@ -52,6 +53,11 @@ class StravaAuthService {
       throw StravaAuthException('Client ID not configured');
     }
 
+    // A new random state per authorization: the callback must bring it
+    // back, which proves it answers this request (see handleCallback).
+    final state = _newState();
+    await _storage.savePendingOAuthState(state);
+
     return Uri.parse(StravaConfig.authorizationUrl).replace(
       queryParameters: {
         'client_id': creds.clientId,
@@ -59,8 +65,25 @@ class StravaAuthService {
         'response_type': 'code',
         'scope': StravaConfig.scopes,
         'approval_prompt': 'auto',
+        'state': state,
       },
     );
+  }
+
+  static String _newState() {
+    final random = Random.secure();
+    final bytes = List<int>.generate(32, (_) => random.nextInt(256));
+    return base64UrlEncode(bytes).replaceAll('=', '');
+  }
+
+  /// Compares in constant time (no early exit revealing a common prefix).
+  static bool _sameState(String a, String b) {
+    if (a.length != b.length) return false;
+    var difference = 0;
+    for (var i = 0; i < a.length; i++) {
+      difference |= a.codeUnitAt(i) ^ b.codeUnitAt(i);
+    }
+    return difference == 0;
   }
 
   /// Initiate OAuth flow by opening browser/Strava app
@@ -92,6 +115,21 @@ class StravaAuthService {
       debugPrint('[Strava Auth] handleCallback: URI does not match callback pattern');
       return false;
     }
+
+    // Any app or web page can open xwift://localhost/callback. Only accept a
+    // callback carrying the state of an authorization started here, once:
+    // otherwise someone else's code could link the app to their account.
+    final expectedState = await _storage.readPendingOAuthState();
+    final receivedState = uri.queryParameters['state'];
+    if (expectedState == null ||
+        receivedState == null ||
+        !_sameState(receivedState, expectedState)) {
+      debugPrint('[Strava Auth] handleCallback: unexpected OAuth state, callback rejected');
+      throw StravaAuthException(
+        'Réponse Strava inattendue : relancez la connexion depuis Xwift.',
+      );
+    }
+    await _storage.clearPendingOAuthState();
 
     // Check for errors
     final error = uri.queryParameters['error'];

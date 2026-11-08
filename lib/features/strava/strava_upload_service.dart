@@ -95,7 +95,7 @@ class StravaUploadService {
     request.files.add(http.MultipartFile.fromBytes(
       'file',
       compressedBytes,
-      filename: '${externalId}.fit.gz',
+      filename: '$externalId.fit.gz',
     ));
 
     debugPrint('[Strava Upload] Sending upload request...');
