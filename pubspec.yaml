@@ -62,3 +62,6 @@ flutter:
 
   assets:
     - assets/images/
+    # Inter, bundled so that text never depends on the network (google_fonts
+    # uses these files instead of downloading them). License: OFL.txt.
+    - assets/google_fonts/
