@@ -77,8 +77,8 @@ class TcxExporter {
     final distanceMeters = _calculateTotalDistance(session.samples);
     buffer.writeln('        <DistanceMeters>$distanceMeters</DistanceMeters>');
 
-    final avgSpeed = distanceMeters / (totalSeconds > 0 ? totalSeconds : 1);
-    buffer.writeln('        <MaximumSpeed>${_formatDouble(avgSpeed)}</MaximumSpeed>');
+    final maxSpeed = _calculateMaxSpeed(session.samples);
+    buffer.writeln('        <MaximumSpeed>${_formatDouble(maxSpeed)}</MaximumSpeed>');
 
     final calories = _estimateCalories(session);
     buffer.writeln('        <Calories>$calories</Calories>');
@@ -180,8 +180,17 @@ class TcxExporter {
   }
 
   static double _calculateTotalDistance(List<TelemetrySample> samples) {
-    if (samples.isEmpty) return 0;
-    return (samples.last.distance ?? 0).toDouble();
+    // The last samples may carry no distance (heart rate only): use the max.
+    final distances = samples.map((s) => s.distance).whereType<int>();
+    if (distances.isEmpty) return 0;
+    return distances.reduce((a, b) => a > b ? a : b).toDouble();
+  }
+
+  /// Maximum speed in m/s.
+  static double _calculateMaxSpeed(List<TelemetrySample> samples) {
+    final speeds = samples.map((s) => s.speed).whereType<double>();
+    if (speeds.isEmpty) return 0;
+    return speeds.reduce((a, b) => a > b ? a : b) / 3.6;
   }
 
   static int _calculateAverageHeartRate(List<TelemetrySample> samples) {
