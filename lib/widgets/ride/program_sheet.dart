@@ -22,7 +22,7 @@ class ProgramSheet extends ConsumerWidget {
     final builtins = builtinWorkouts(ftp);
 
     void start(WorkoutPlan plan) {
-      ref.read(trainerControlProvider.notifier).startProgram(plan);
+      startWorkoutProgram(context, plan);
       Navigator.pop(context);
     }
 
@@ -79,6 +79,21 @@ class ProgramSheet extends ConsumerWidget {
         ],
       ),
     );
+  }
+}
+
+/// Starts [plan] as the ERG program. Imported workouts are marked as used,
+/// so that the most recent ones come first in the lists.
+void startWorkoutProgram(BuildContext context, WorkoutPlan plan) {
+  final container = ProviderScope.containerOf(context, listen: false);
+  container.read(trainerControlProvider.notifier).startProgram(plan);
+  final id = plan.id;
+  if (id != null && !id.startsWith('builtin-')) {
+    container
+        .read(workoutRepositoryProvider)
+        .markWorkoutUsed(id)
+        .then((_) => container.invalidate(savedWorkoutsProvider))
+        .catchError((Object _) {});
   }
 }
 

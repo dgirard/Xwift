@@ -8,7 +8,7 @@ import 'package:file_picker/file_picker.dart';
 import '../core/theme/app_colors.dart';
 import '../core/database/database_provider.dart';
 import '../models/workout_plan.dart';
-import '../features/control/trainer_control_provider.dart';
+import '../widgets/ride/program_sheet.dart';
 import '../features/settings/user_settings_provider.dart';
 import '../features/workout/parsers/workout_parser.dart';
 
@@ -226,7 +226,7 @@ class _WorkoutCard extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
@@ -293,7 +293,7 @@ class _WorkoutDetailsSheet extends ConsumerWidget {
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: () {
-                ref.read(trainerControlProvider.notifier).startProgram(workout);
+                startWorkoutProgram(context, workout);
                 Navigator.pop(context);
                 context.push('/ride');
               },

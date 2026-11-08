@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../core/theme/app_colors.dart';
 import '../features/bluetooth/ble_provider.dart';
 import '../features/control/trainer_control_provider.dart';
 import '../features/ride/ride_session_provider.dart';
+import '../features/settings/user_settings_provider.dart';
 import '../widgets/ride/control_panel.dart';
 import '../widgets/ride/live_data_panel.dart';
 import '../widgets/ride/ride_action_bar.dart';
@@ -31,6 +33,22 @@ class _RideScreenState extends ConsumerState<RideScreen> {
       ref.read(trainerControlProvider);
       ref.read(bleConnectionProvider.notifier).autoConnect();
     });
+    _applyKeepScreenOn(
+      ref.read(userSettingsProvider).valueOrNull?.keepScreenOn ?? true,
+    );
+  }
+
+  @override
+  void dispose() {
+    _setWakelock(false);
+    super.dispose();
+  }
+
+  void _applyKeepScreenOn(bool keepOn) => _setWakelock(keepOn);
+
+  static void _setWakelock(bool on) {
+    // No wakelock plugin in tests: never let that break the screen.
+    (on ? WakelockPlus.enable() : WakelockPlus.disable()).catchError((_) {});
   }
 
   void _goHome() {
@@ -44,6 +62,10 @@ class _RideScreenState extends ConsumerState<RideScreen> {
   @override
   Widget build(BuildContext context) {
     final rideActive = ref.watch(rideSessionProvider.select((s) => s.isActive));
+    ref.listen<bool?>(
+      userSettingsProvider.select((s) => s.valueOrNull?.keepScreenOn),
+      (_, keepOn) => _applyKeepScreenOn(keepOn ?? true),
+    );
     final router = GoRouter.of(context);
 
     return PopScope(

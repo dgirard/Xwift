@@ -263,6 +263,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 context.push('/connect');
               },
             ),
+            Consumer(
+              builder: (context, ref, _) {
+                final settings = ref.watch(userSettingsProvider).valueOrNull;
+                return SwitchListTile(
+                  secondary: const Icon(Icons.screen_lock_portrait),
+                  title: const Text('Écran allumé pendant la sortie'),
+                  value: settings?.keepScreenOn ?? true,
+                  onChanged: settings == null
+                      ? null
+                      : (value) => ref
+                          .read(userSettingsProvider.notifier)
+                          .update(settings.copyWith(keepScreenOn: value)),
+                );
+              },
+            ),
             const SizedBox(height: 16),
           ],
         ),
@@ -393,7 +408,7 @@ class _Badge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
+        color: color.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(

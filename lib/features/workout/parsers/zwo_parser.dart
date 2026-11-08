@@ -95,13 +95,12 @@ class ZwoParser implements WorkoutParser {
 
     // Create stepped intervals for gradual power change
     const steps = 5;
-    final stepDuration = Duration(seconds: duration.inSeconds ~/ steps);
     final powerStep = (powerHigh - powerLow) / (steps - 1);
 
     return List.generate(steps, (i) {
       final power = (powerLow + (powerStep * i)).round();
       return WorkoutInterval(
-        duration: stepDuration,
+        duration: _stepDuration(duration, steps, i),
         targetPower: power,
         name: '$name ${i + 1}/$steps',
       );
@@ -123,8 +122,8 @@ class ZwoParser implements WorkoutParser {
 
   List<WorkoutInterval> _parseIntervals(XmlElement element, int ftp) {
     final repeat = _parseInt(element, 'Repeat') ?? 1;
-    final onDuration = Duration(seconds: _parseInt(element, 'OnDuration') ?? 60);
-    final offDuration = Duration(seconds: _parseInt(element, 'OffDuration') ?? 60);
+    final onDuration = Duration(seconds: _parseSeconds(element, 'OnDuration') ?? 60);
+    final offDuration = Duration(seconds: _parseSeconds(element, 'OffDuration') ?? 60);
     final onPower = _parsePower(element, 'OnPower', ftp) ?? (ftp * 1.2).round();
     final offPower = _parsePower(element, 'OffPower', ftp) ?? (ftp * 0.5).round();
     final onCadence = _parseInt(element, 'Cadence');
@@ -167,13 +166,12 @@ class ZwoParser implements WorkoutParser {
 
     // Create stepped intervals for ramp
     const steps = 10;
-    final stepDuration = Duration(seconds: duration.inSeconds ~/ steps);
     final powerStep = (powerHigh - powerLow) / (steps - 1);
 
     return List.generate(steps, (i) {
       final power = (powerLow + (powerStep * i)).round();
       return WorkoutInterval(
-        duration: stepDuration,
+        duration: _stepDuration(duration, steps, i),
         targetPower: power,
         name: 'Ramp ${i + 1}/$steps',
       );
@@ -181,8 +179,23 @@ class ZwoParser implements WorkoutParser {
   }
 
   Duration _parseDuration(XmlElement element) {
-    final seconds = _parseInt(element, 'Duration') ?? 60;
+    final seconds = _parseSeconds(element, 'Duration') ?? 60;
     return Duration(seconds: seconds);
+  }
+
+  /// Seconds, possibly written with decimals ("300.5").
+  int? _parseSeconds(XmlElement element, String attribute) {
+    final value = _getAttribute(element, attribute);
+    if (value == null) return null;
+    return double.tryParse(value)?.round();
+  }
+
+  /// Splits [total] into [steps] parts; the last one takes the remainder so
+  /// that the steps add up to the original duration.
+  Duration _stepDuration(Duration total, int steps, int index) {
+    final base = total.inSeconds ~/ steps;
+    final remainder = total.inSeconds - base * steps;
+    return Duration(seconds: index == steps - 1 ? base + remainder : base);
   }
 
   int? _parsePower(XmlElement element, String attribute, int ftp) {

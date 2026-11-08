@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'app.dart';
 
@@ -23,9 +22,6 @@ void main() async {
       systemNavigationBarIconBrightness: Brightness.light,
     ),
   );
-
-  // Enable wakelock by default (can be toggled in settings)
-  await WakelockPlus.enable();
 
   runApp(
     const ProviderScope(
