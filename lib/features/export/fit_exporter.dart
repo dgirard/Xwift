@@ -226,8 +226,8 @@ class FitExporter {
     buffer.addByte(_eventLap);
     buffer.addByte(_eventTypeStop);
     _writeTimestamp(buffer, session.startTime);
-    _writeUint32(buffer, summary.totalTimeMs);
-    _writeUint32(buffer, summary.totalTimeMs);
+    _writeUint32(buffer, summary.elapsedMs);
+    _writeUint32(buffer, summary.timerMs);
     _writeUint32(buffer, summary.distanceMeters * 100);
     _writeUint16(buffer, summary.calories);
     _writeUint16(buffer, summary.avgSpeedMms);
@@ -275,8 +275,8 @@ class FitExporter {
     _writeTimestamp(buffer, session.startTime);
     buffer.addByte(_sportCycling);
     buffer.addByte(_subSportIndoorCycling);
-    _writeUint32(buffer, summary.totalTimeMs);
-    _writeUint32(buffer, summary.totalTimeMs);
+    _writeUint32(buffer, summary.elapsedMs);
+    _writeUint32(buffer, summary.timerMs);
     _writeUint32(buffer, summary.distanceMeters * 100);
     _writeUint16(buffer, summary.calories);
     _writeUint16(buffer, summary.avgSpeedMms);
@@ -302,7 +302,7 @@ class FitExporter {
     ]);
     buffer.addByte(_localActivity);
     _writeTimestamp(buffer, summary.endTime);
-    _writeUint32(buffer, summary.totalTimeMs);
+    _writeUint32(buffer, summary.timerMs);
     _writeUint16(buffer, 1); // num_sessions
     buffer.addByte(0); // type: manual
     buffer.addByte(_eventActivity);
@@ -378,7 +378,9 @@ class FitExporter {
 class _Summary {
   _Summary(RideSession session)
       : endTime = session.endTime ?? session.startTime.add(session.duration),
-        totalTimeMs = session.duration.inMilliseconds {
+        elapsedMs = session.duration.inMilliseconds,
+        // Timer time excludes pauses: Strava's moving time and averages use it.
+        timerMs = session.ridingDuration.inMilliseconds {
     final samples = session.samples;
     final heartRates = [
       for (final s in samples)
@@ -412,7 +414,7 @@ class _Summary {
         : (speeds.reduce(math.max) / 3.6 * 1000).round().clamp(0, 0xFFFE);
     distanceMeters =
         distances.isEmpty ? 0 : math.max(0, distances.reduce(math.max));
-    final seconds = session.duration.inSeconds;
+    final seconds = session.ridingDuration.inSeconds;
     avgSpeedMms = seconds > 0
         ? (distanceMeters / seconds * 1000).round().clamp(0, 0xFFFE)
         : 0;
@@ -423,7 +425,8 @@ class _Summary {
   }
 
   final DateTime endTime;
-  final int totalTimeMs;
+  final int elapsedMs;
+  final int timerMs;
   late final int? avgHeartRate;
   late final int? maxHeartRate;
   late final int? avgCadence;

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/theme/app_colors.dart';
+import '../features/ride/ride_checkpoint.dart';
 import '../features/ride/ride_session_provider.dart';
 import '../widgets/ride/ride_format.dart';
 import '../widgets/ride/trainer_status.dart';
@@ -16,6 +17,7 @@ class WelcomeScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final ride = ref.watch(rideSessionProvider);
     final trainer = ref.watch(trainerLinkProvider);
+    final interrupted = ref.watch(interruptedRideProvider).valueOrNull;
 
     final String trainerText = switch (trainer.link) {
       TrainerLink.connected => 'Connecté à ${trainer.title}.',
@@ -96,6 +98,9 @@ class WelcomeScreen extends ConsumerWidget {
                     if (ride.isActive) ...[
                       _OngoingRide(ride: ride),
                       const SizedBox(height: 12),
+                    ] else if (interrupted != null) ...[
+                      _InterruptedRide(checkpoint: interrupted),
+                      const SizedBox(height: 12),
                     ],
                     SizedBox(
                       width: double.infinity,
@@ -170,6 +175,100 @@ class WelcomeScreen extends ConsumerWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// A ride cut short by the app being killed: resume it, save it or drop it.
+class _InterruptedRide extends ConsumerWidget {
+  const _InterruptedRide({required this.checkpoint});
+
+  final RideCheckpoint checkpoint;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final notifier = ref.read(rideSessionProvider.notifier);
+    final details = [
+      formatClock(checkpoint.elapsed),
+      if (checkpoint.distance > 0) formatDistance(checkpoint.distance),
+    ].join(' · ');
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+      decoration: BoxDecoration(
+        color: AppColors.warning.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.warning.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.restore, color: AppColors.warning),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Sortie interrompue retrouvée',
+                  style: theme.textTheme.titleSmall,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(details, style: theme.textTheme.titleSmall),
+          Text(
+            'L\'application s\'est fermée pendant la sortie.',
+            style: theme.textTheme.bodySmall,
+          ),
+          OverflowBar(
+            alignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () async {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Supprimer la sortie interrompue ?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text('Annuler'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          style: TextButton.styleFrom(
+                              foregroundColor: AppColors.error),
+                          child: const Text('Supprimer'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirmed == true) await notifier.discardInterrupted();
+                },
+                style: TextButton.styleFrom(foregroundColor: AppColors.error),
+                child: const Text('Supprimer'),
+              ),
+              TextButton(
+                onPressed: () => notifier.saveInterrupted(
+                  checkpoint,
+                  checkpoint.session.workout?.name ?? 'Sortie interrompue',
+                ),
+                child: const Text('Enregistrer'),
+              ),
+              TextButton(
+                onPressed: () {
+                  notifier.restore(checkpoint);
+                  context.push('/ride');
+                },
+                child: const Text('Reprendre'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

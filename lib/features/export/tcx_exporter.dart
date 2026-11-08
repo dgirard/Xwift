@@ -71,7 +71,8 @@ class TcxExporter {
     buffer.writeln('      <Lap StartTime="$startTimeIso">');
 
     // Lap statistics
-    final totalSeconds = session.duration.inSeconds;
+    // Lap time = riding time, pauses excluded.
+    final totalSeconds = session.ridingDuration.inSeconds;
     buffer.writeln('        <TotalTimeSeconds>$totalSeconds</TotalTimeSeconds>');
 
     final distanceMeters = _calculateTotalDistance(session.samples);
@@ -215,7 +216,7 @@ class TcxExporter {
     // Simple calorie estimation based on power and duration
     // ~3.6 kJ per calorie, power is in watts (J/s)
     final avgPower = session.averagePower;
-    final durationSeconds = session.duration.inSeconds;
+    final durationSeconds = session.ridingDuration.inSeconds;
     if (avgPower == null || avgPower <= 0 || durationSeconds <= 0) {
       return 0;
     }

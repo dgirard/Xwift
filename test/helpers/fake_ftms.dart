@@ -1,13 +1,12 @@
 import 'dart:async';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ridecontroller/core/constants/ftms_constants.dart';
 import 'package:ridecontroller/features/ftms/ftms_provider.dart';
 
 /// Trainer double: records the commands instead of writing them over BLE.
 class FakeFtms extends FtmsControlNotifier {
-  FakeFtms(Ref ref, {bool ready = true, DateTime Function()? clock})
-      : super(ref, connected: false, clock: clock) {
+  FakeFtms(super.ref, {bool ready = true, super.clock})
+      : super(connected: false) {
     state = state.copyWith(isReady: ready, hasControl: ready);
   }
 

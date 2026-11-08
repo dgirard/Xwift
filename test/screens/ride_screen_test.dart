@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ridecontroller/features/bluetooth/ble_provider.dart';
 import 'package:ridecontroller/features/ftms/ftms_provider.dart';
+import 'package:ridecontroller/features/ride/ride_checkpoint.dart';
 import 'package:ridecontroller/models/ftms_device.dart';
 import 'package:ridecontroller/screens/ride_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -60,6 +61,8 @@ void main() {
         ftmsControlProvider.overrideWith(
           (ref) => ftms = FakeFtms(ref, ready: connected, clock: () => now),
         ),
+        rideCheckpointStoreProvider
+            .overrideWithValue(MemoryRideCheckpointStore()),
       ],
       child: MaterialApp.router(theme: ThemeData.dark(), routerConfig: router),
     ));

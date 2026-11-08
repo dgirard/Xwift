@@ -18,7 +18,6 @@ final appDatabaseProvider = Provider<AppDatabase>((ref) {
 /// Repository for ride history operations
 class RideRepository {
   final AppDatabase _db;
-  static const _uuid = Uuid();
 
   RideRepository(this._db);
 
@@ -35,7 +34,7 @@ class RideRepository {
       startTime: session.startTime,
       endTime: Value(session.endTime),
       mode: session.mode.name,
-      durationSeconds: Value(session.duration.inSeconds),
+      durationSeconds: Value(session.ridingDuration.inSeconds),
       totalDistance: Value(session.totalDistance),
       totalCalories: Value(session.totalCalories),
       averagePower: Value(session.averagePower),
@@ -103,6 +102,7 @@ class RideRepository {
       startTime: ride.startTime,
       endTime: ride.endTime,
       mode: RideMode.values.byName(ride.mode),
+      activeDuration: Duration(seconds: ride.durationSeconds),
       samples: samples.map((s) => TelemetrySample(
         timestamp: s.timestamp,
         power: s.power,

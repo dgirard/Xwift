@@ -38,6 +38,7 @@ class RideSession extends Equatable {
     this.targetPower,
     this.targetGrade,
     this.resistanceLevel,
+    this.activeDuration,
   });
 
   final String id;
@@ -52,11 +53,17 @@ class RideSession extends Equatable {
   final double? targetGrade; // For SIM mode
   final double? resistanceLevel;
 
-  /// Duration of the ride
+  /// Riding time, pauses excluded (null for rides recorded without it).
+  final Duration? activeDuration;
+
+  /// Elapsed time from start to end, pauses included.
   Duration get duration {
     final end = endTime ?? DateTime.now();
     return end.difference(startTime);
   }
+
+  /// Time actually ridden: what the rider and Strava call the ride duration.
+  Duration get ridingDuration => activeDuration ?? duration;
 
   /// Total distance in meters
   int get totalDistance {
@@ -121,6 +128,7 @@ class RideSession extends Equatable {
     int? targetPower,
     double? targetGrade,
     double? resistanceLevel,
+    Duration? activeDuration,
   }) {
     return RideSession(
       id: id ?? this.id,
@@ -134,6 +142,7 @@ class RideSession extends Equatable {
       targetPower: targetPower ?? this.targetPower,
       targetGrade: targetGrade ?? this.targetGrade,
       resistanceLevel: resistanceLevel ?? this.resistanceLevel,
+      activeDuration: activeDuration ?? this.activeDuration,
     );
   }
 
@@ -151,6 +160,7 @@ class RideSession extends Equatable {
       'targetPower': targetPower,
       'targetGrade': targetGrade,
       'resistanceLevel': resistanceLevel,
+      'activeDurationMs': activeDuration?.inMilliseconds,
     };
   }
 
@@ -173,6 +183,9 @@ class RideSession extends Equatable {
       targetPower: json['targetPower'] as int?,
       targetGrade: (json['targetGrade'] as num?)?.toDouble(),
       resistanceLevel: (json['resistanceLevel'] as num?)?.toDouble(),
+      activeDuration: json['activeDurationMs'] == null
+          ? null
+          : Duration(milliseconds: json['activeDurationMs'] as int),
     );
   }
 
@@ -195,5 +208,6 @@ class RideSession extends Equatable {
         targetPower,
         targetGrade,
         resistanceLevel,
+        activeDuration,
       ];
 }

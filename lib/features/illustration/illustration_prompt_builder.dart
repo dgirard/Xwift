@@ -45,7 +45,7 @@ INSTRUCTIONS:
     final buffer = StringBuffer();
 
     // Duree
-    final durationMinutes = session.duration.inMinutes;
+    final durationMinutes = session.ridingDuration.inMinutes;
     buffer.write('Il vient de faire $durationMinutes minutes de velo');
 
     // Puissance
@@ -73,7 +73,7 @@ INSTRUCTIONS:
     // Cadence
     final avgCadence = session.averageCadence;
     if (avgCadence != null) {
-      buffer.write(', cadence de ${avgCadence} rpm');
+      buffer.write(', cadence de $avgCadence rpm');
     }
 
     // Vitesse
@@ -85,7 +85,7 @@ INSTRUCTIONS:
     // Frequence cardiaque
     final avgHr = session.averageHeartRate;
     if (avgHr != null) {
-      buffer.write(', frequence cardiaque ${avgHr} bpm');
+      buffer.write(', frequence cardiaque $avgHr bpm');
     }
 
     // Mode

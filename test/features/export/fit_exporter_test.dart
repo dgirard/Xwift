@@ -154,6 +154,25 @@ void main() {
     expect(s[9], 5092 * 100, reason: 'total_distance');
   });
 
+  test('timer time excludes pauses, elapsed time includes them', () {
+    final paused = RideSession(
+      id: 'paused',
+      startTime: start,
+      endTime: start.add(const Duration(minutes: 15)),
+      activeDuration: const Duration(minutes: 10),
+      mode: RideMode.sim,
+      state: RideState.completed,
+      samples: session.samples,
+    );
+    final decoded = _Fit(FitExporter.generateContent(paused));
+    final lap = decoded.single(_lap);
+    expect(lap[7], 15 * 60 * 1000, reason: 'total_elapsed_time');
+    expect(lap[8], 10 * 60 * 1000, reason: 'total_timer_time');
+    expect(decoded.single(_session)[8], 10 * 60 * 1000);
+    expect(TcxExporter.generateContent(paused),
+        contains('<TotalTimeSeconds>600</TotalTimeSeconds>'));
+  });
+
   test('TCX maximum speed is the real maximum, not the average', () {
     final tcx = TcxExporter.generateContent(session);
     expect(tcx, contains('<MaximumSpeed>9.44</MaximumSpeed>'));

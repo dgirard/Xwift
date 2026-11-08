@@ -61,6 +61,9 @@ class Workouts extends Table {
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
+  /// Database on a given executor (in-memory in tests).
+  AppDatabase.forTesting(super.executor);
+
   @override
   int get schemaVersion => 2;
 
@@ -147,7 +150,6 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<int> getTotalDuration() async {
-    final sum = rideSamples.id.count();
     final query = selectOnly(rides)..addColumns([rides.durationSeconds.sum()]);
     final result = await query.getSingle();
     return result.read(rides.durationSeconds.sum()) ?? 0;
