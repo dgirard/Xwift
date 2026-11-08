@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import 'strava_config.dart';
@@ -18,16 +19,23 @@ class StravaAuthService {
   /// Check if user is connected to Strava
   Future<bool> isConnected() async {
     final tokens = await _storage.getTokens();
-    if (tokens == null) return false;
+    if (tokens == null) {
+      debugPrint('[Strava Auth] isConnected: no tokens found');
+      return false;
+    }
     // If token is expired, try to refresh
     if (tokens.isExpired) {
       try {
+        debugPrint('[Strava Auth] isConnected: token expired, attempting refresh');
         await refreshToken();
+        debugPrint('[Strava Auth] isConnected: token refresh successful');
         return true;
       } catch (e) {
+        debugPrint('[Strava Auth] isConnected: token refresh failed: $e');
         return false;
       }
     }
+    debugPrint('[Strava Auth] isConnected: valid token found');
     return true;
   }
 
@@ -58,13 +66,16 @@ class StravaAuthService {
   /// Initiate OAuth flow by opening browser/Strava app
   Future<void> initiateAuth() async {
     final authUrl = await buildAuthorizationUrl();
+    debugPrint('[Strava Auth] initiateAuth: opening authorization URL');
 
     if (await canLaunchUrl(authUrl)) {
       await launchUrl(
         authUrl,
         mode: LaunchMode.externalApplication,
       );
+      debugPrint('[Strava Auth] initiateAuth: URL launched successfully');
     } else {
+      debugPrint('[Strava Auth] initiateAuth: could not launch URL');
       throw StravaAuthException('Could not launch authorization URL');
     }
   }
@@ -72,25 +83,31 @@ class StravaAuthService {
   /// Handle OAuth callback URI
   /// Returns true if authentication was successful
   Future<bool> handleCallback(Uri uri) async {
+    debugPrint('[Strava Auth] handleCallback: received callback (has code: ${uri.queryParameters.containsKey("code")})');
+
     // Check if this is our callback
     if (uri.scheme != StravaConfig.callbackScheme ||
         uri.host != StravaConfig.callbackHost ||
         !uri.path.startsWith('/callback')) {
+      debugPrint('[Strava Auth] handleCallback: URI does not match callback pattern');
       return false;
     }
 
     // Check for errors
     final error = uri.queryParameters['error'];
     if (error != null) {
+      debugPrint('[Strava Auth] handleCallback: authorization error: $error');
       throw StravaAuthException('Authorization denied: $error');
     }
 
     // Get the authorization code
     final code = uri.queryParameters['code'];
     if (code == null || code.isEmpty) {
+      debugPrint('[Strava Auth] handleCallback: no authorization code in URI');
       throw StravaAuthException('No authorization code received');
     }
 
+    debugPrint('[Strava Auth] handleCallback: exchanging code for token');
     // Exchange code for tokens
     await exchangeCodeForToken(code);
     return true;
@@ -113,15 +130,19 @@ class StravaAuthService {
       },
     );
 
+    debugPrint('[Strava Auth] exchangeCodeForToken: response status ${response.statusCode}');
+
     if (response.statusCode != 200) {
+      debugPrint('[Strava Auth] exchangeCodeForToken: failed with status ${response.statusCode}');
       throw StravaAuthException(
-        'Token exchange failed: ${response.statusCode} - ${response.body}',
+        'Token exchange failed: ${response.statusCode}',
       );
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
     final tokens = StravaTokens.fromJson(json);
     await _storage.saveTokens(tokens);
+    debugPrint('[Strava Auth] exchangeCodeForToken: tokens saved successfully');
     return tokens;
   }
 
@@ -137,6 +158,7 @@ class StravaAuthService {
       throw StravaAuthException('No refresh token available');
     }
 
+    debugPrint('[Strava Auth] refreshToken: attempting refresh');
     final response = await _httpClient.post(
       Uri.parse(StravaConfig.tokenUrl),
       body: {
@@ -147,15 +169,19 @@ class StravaAuthService {
       },
     );
 
+    debugPrint('[Strava Auth] refreshToken: response status ${response.statusCode}');
+
     if (response.statusCode != 200) {
+      debugPrint('[Strava Auth] refreshToken: failed with status ${response.statusCode}');
       throw StravaAuthException(
-        'Token refresh failed: ${response.statusCode} - ${response.body}',
+        'Token refresh failed: ${response.statusCode}',
       );
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
     final tokens = StravaTokens.fromJson(json);
     await _storage.saveTokens(tokens);
+    debugPrint('[Strava Auth] refreshToken: tokens refreshed successfully');
     return tokens;
   }
 

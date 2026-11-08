@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:app_links/app_links.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/ride_session.dart';
@@ -68,6 +70,8 @@ class StravaConnectionNotifier extends StateNotifier<StravaConnectionState> {
   final StravaAuthService _authService;
   final StravaTokenStorage _storage;
   final AppLinks _appLinks;
+  Timer? _connectingTimeout;
+  StreamSubscription<Uri>? _deepLinkSubscription;
 
   StravaConnectionNotifier(this._authService, this._storage, this._appLinks)
       : super(const StravaConnectionState()) {
@@ -75,33 +79,48 @@ class StravaConnectionNotifier extends StateNotifier<StravaConnectionState> {
     _listenForDeepLinks();
   }
 
+  @override
+  void dispose() {
+    _connectingTimeout?.cancel();
+    _deepLinkSubscription?.cancel();
+    super.dispose();
+  }
+
   Future<void> _initialize() async {
     // Check if credentials are configured
     final hasCredentials = await _storage.hasCredentials();
     if (!hasCredentials) {
+      debugPrint('[Strava] _initialize: no credentials configured');
       state = state.copyWith(status: StravaConnectionStatus.notConfigured);
       return;
     }
 
     // Check if connected
+    debugPrint('[Strava] _initialize: checking connection...');
     final isConnected = await _authService.isConnected();
     if (isConnected) {
       final athlete = await _authService.getAthlete();
+      debugPrint('[Strava] _initialize: connected as ${athlete?.fullName}');
       state = state.copyWith(
         status: StravaConnectionStatus.connected,
         athlete: athlete,
       );
     } else {
+      debugPrint('[Strava] _initialize: disconnected (token refresh failed or no tokens)');
       state = state.copyWith(status: StravaConnectionStatus.disconnected);
     }
   }
 
   void _listenForDeepLinks() {
-    _appLinks.uriLinkStream.listen((uri) async {
+    _deepLinkSubscription = _appLinks.uriLinkStream.listen((uri) async {
+      debugPrint('[Strava] Deep link received: ${uri.scheme}://${uri.host}${uri.path}');
       if (uri.scheme == StravaConfig.callbackScheme &&
           uri.host == StravaConfig.callbackHost &&
           uri.path.startsWith('/callback')) {
+        debugPrint('[Strava] Deep link matches Strava callback, handling...');
         await handleCallback(uri);
+      } else {
+        debugPrint('[Strava] Deep link does not match Strava callback pattern');
       }
     });
   }
@@ -115,9 +134,24 @@ class StravaConnectionNotifier extends StateNotifier<StravaConnectionState> {
   /// Initiate OAuth connection
   Future<void> connect() async {
     try {
+      debugPrint('[Strava] connect: initiating OAuth flow...');
       state = state.copyWith(status: StravaConnectionStatus.connecting);
       await _authService.initiateAuth();
+
+      // Timeout if the callback is not received within 2 minutes
+      _connectingTimeout?.cancel();
+      _connectingTimeout = Timer(const Duration(minutes: 2), () {
+        if (state.status == StravaConnectionStatus.connecting) {
+          debugPrint('[Strava] connect: timeout - callback not received after 2 minutes');
+          state = state.copyWith(
+            status: StravaConnectionStatus.error,
+            error: 'Le retour de Strava n\'a pas ete recu. '
+                'Verifiez que l\'app Strava est installee ou reessayez.',
+          );
+        }
+      });
     } catch (e) {
+      debugPrint('[Strava] connect: error - $e');
       state = state.copyWith(
         status: StravaConnectionStatus.error,
         error: e.toString(),
@@ -128,16 +162,20 @@ class StravaConnectionNotifier extends StateNotifier<StravaConnectionState> {
   /// Handle OAuth callback
   Future<void> handleCallback(Uri uri) async {
     try {
+      _connectingTimeout?.cancel();
+      debugPrint('[Strava] handleCallback: processing callback...');
       state = state.copyWith(status: StravaConnectionStatus.connecting);
       final success = await _authService.handleCallback(uri);
       if (success) {
         final athlete = await _authService.getAthlete();
+        debugPrint('[Strava] handleCallback: connected as ${athlete?.fullName}');
         state = state.copyWith(
           status: StravaConnectionStatus.connected,
           athlete: athlete,
         );
       }
     } catch (e) {
+      debugPrint('[Strava] handleCallback: error - $e');
       state = state.copyWith(
         status: StravaConnectionStatus.error,
         error: e.toString(),

@@ -127,20 +127,3 @@ class StravaUploadStatus {
     );
   }
 }
-
-/// Strava connection state
-enum StravaConnectionState {
-  disconnected,
-  connecting,
-  connected,
-  error,
-}
-
-/// Strava upload state
-enum StravaUploadState {
-  idle,
-  uploading,
-  processing,
-  success,
-  error,
-}

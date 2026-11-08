@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:archive/archive.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
@@ -26,89 +27,109 @@ class StravaUploadService {
     String? name,
     String? description,
   }) async {
-    // Get valid access token
-    final accessToken = await _authService.getValidAccessToken();
-
-    // Generate FIT file
+    // Generate FIT file once
+    debugPrint('[Strava Upload] Generating FIT file...');
     final fitBytes = FitExporter.generateContent(session);
+    final compressedBytes = GZipEncoder().encode(fitBytes);
+    debugPrint('[Strava Upload] FIT file: ${fitBytes.length} bytes, compressed: ${compressedBytes.length} bytes');
 
-    // Compress with GZIP
-    final gzipEncoder = GZipEncoder();
-    final compressedBytes = gzipEncoder.encode(fitBytes);
-
-    // Generate unique external ID for deduplication
     final externalId = 'xwift_${session.id}';
-
-    // Build activity name
     final activityName = name ?? _generateActivityName(session);
-
-    // Build description
     final activityDescription = description ?? _generateDescription(session);
 
-    // Create multipart request
+    // Try upload, retry once on 401 after token refresh
+    var response = await _sendUpload(
+      compressedBytes, externalId, activityName, activityDescription,
+    );
+
+    if (response.statusCode == 401) {
+      debugPrint('[Strava Upload] 401 received, attempting token refresh and retry...');
+      try {
+        await _authService.refreshToken();
+        response = await _sendUpload(
+          compressedBytes, externalId, activityName, activityDescription,
+        );
+      } catch (e) {
+        debugPrint('[Strava Upload] Token refresh failed: $e');
+        throw StravaUploadException('Authentication expired. Please reconnect to Strava.');
+      }
+    }
+
+    debugPrint('[Strava Upload] Response status: ${response.statusCode}');
+
+    if (response.statusCode == 201) {
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      final uploadStatus = StravaUploadStatus.fromJson(json);
+      debugPrint('[Strava Upload] Upload accepted, polling for completion (id: ${uploadStatus.id})');
+      return _pollForCompletion(uploadStatus.id);
+    } else if (response.statusCode == 401) {
+      throw StravaUploadException('Authentication expired. Please reconnect to Strava.');
+    } else if (response.statusCode == 429) {
+      debugPrint('[Strava Upload] Rate limited (429)');
+      throw StravaUploadException('Rate limit exceeded. Please try again later.');
+    } else {
+      debugPrint('[Strava Upload] Upload failed with status ${response.statusCode}');
+      throw StravaUploadException(
+        'Upload failed: ${response.statusCode}',
+      );
+    }
+  }
+
+  /// Send the upload request with a fresh token
+  Future<http.Response> _sendUpload(
+    List<int> compressedBytes,
+    String externalId,
+    String activityName,
+    String activityDescription,
+  ) async {
+    final accessToken = await _authService.getValidAccessToken();
     final uri = Uri.parse('${StravaConfig.apiBaseUrl}/uploads');
     final request = http.MultipartRequest('POST', uri);
 
     request.headers['Authorization'] = 'Bearer $accessToken';
-
     request.fields['data_type'] = 'fit.gz';
     request.fields['activity_type'] = 'VirtualRide';
     request.fields['name'] = activityName;
     request.fields['description'] = activityDescription;
     request.fields['external_id'] = externalId;
-
     request.files.add(http.MultipartFile.fromBytes(
       'file',
       compressedBytes,
       filename: '${externalId}.fit.gz',
     ));
 
-    // Send request
+    debugPrint('[Strava Upload] Sending upload request...');
     final streamedResponse = await _httpClient.send(request);
-    final response = await http.Response.fromStream(streamedResponse);
-
-    if (response.statusCode == 201) {
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-      final uploadStatus = StravaUploadStatus.fromJson(json);
-
-      // Poll for completion
-      return _pollForCompletion(uploadStatus.id, accessToken);
-    } else if (response.statusCode == 401) {
-      throw StravaUploadException('Authentication expired. Please reconnect to Strava.');
-    } else if (response.statusCode == 429) {
-      throw StravaUploadException('Rate limit exceeded. Please try again later.');
-    } else {
-      throw StravaUploadException(
-        'Upload failed: ${response.statusCode} - ${response.body}',
-      );
-    }
+    return http.Response.fromStream(streamedResponse);
   }
 
   /// Poll the upload status until processing is complete
-  Future<StravaUploadResult> _pollForCompletion(
-    int uploadId,
-    String accessToken,
-  ) async {
+  Future<StravaUploadResult> _pollForCompletion(int uploadId) async {
     const maxAttempts = 30;
     const pollInterval = Duration(seconds: 2);
 
     for (var attempt = 0; attempt < maxAttempts; attempt++) {
       await Future.delayed(pollInterval);
 
+      debugPrint('[Strava Upload] Polling attempt ${attempt + 1}/$maxAttempts for upload $uploadId');
+      final accessToken = await _authService.getValidAccessToken();
       final status = await _checkUploadStatus(uploadId, accessToken);
 
       if (status.hasError) {
         if (status.isDuplicate) {
+          debugPrint('[Strava Upload] Duplicate activity detected');
           return StravaUploadResult(
             success: true,
             isDuplicate: true,
             message: 'Activity already exists on Strava',
           );
         }
+        debugPrint('[Strava Upload] Upload error: ${status.error}');
         throw StravaUploadException('Upload error: ${status.error}');
       }
 
       if (status.isReady && status.activityId != null) {
+        debugPrint('[Strava Upload] Upload complete! Activity ID: ${status.activityId}');
         return StravaUploadResult(
           success: true,
           activityId: status.activityId,
@@ -116,9 +137,11 @@ class StravaUploadService {
         );
       }
 
+      debugPrint('[Strava Upload] Still processing (status: ${status.status})...');
       // Still processing, continue polling
     }
 
+    debugPrint('[Strava Upload] Polling timed out after $maxAttempts attempts');
     throw StravaUploadException('Upload timed out. Please check Strava later.');
   }
 
